@@ -1,18 +1,13 @@
 defmodule ExMUSH do
-  @moduledoc """
-  Documentation for `ExMUSH`.
-  """
+  use Application
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> ExMUSH.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def start(_type, _args) do
+    [
+      ExMUSH.DB.Repo
+    ]
+    |> Supervisor.start_link(
+      strategy: :one_for_one,
+      name: ExMUSH.Supervisor
+    )
   end
 end
