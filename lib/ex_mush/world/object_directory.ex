@@ -1,0 +1,68 @@
+defmodule ExMUSH.World.ObjectDirectory do
+  use GenServer
+  alias ExMUSH.DB
+
+  @objects_ets __MODULE__.ETS.Objects
+  @contents_ets __MODULE__.ETS.Contents
+
+  def start_link(opts) do
+    opts = Keyword.put_new(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, nil, opts)
+  end
+
+  def owner_id(obj_id), do: get(obj_id).owner_id
+  def parent_id(obj_id), do: get(obj_id).parent_id
+  def location_id(obj_id), do: get(obj_id).location_id
+  def link_id(obj_id), do: get(obj_id).link_id
+
+  defp get(obj_id) do
+    case :ets.lookup(@objects_ets, obj_id) do
+      [{^obj_id, obj}] -> obj
+      [] -> raise "object #{obj_id} not found"
+    end
+  end
+
+  def contents(obj_id) do
+    :ets.lookup(@contents_ets, obj_id)
+    |> Enum.map(fn {^obj_id, c_id} -> c_id end)
+  end
+
+  @impl true
+  def init(_) do
+    :ets.new(@objects_ets, [:set, :protected, :named_table])
+    :ets.new(@contents_ets, [:bag, :protected, :named_table])
+
+    objs = load_objects()
+    index_objects(objs)
+    index_contents(objs)
+
+    {:ok, nil}
+  end
+
+  defmodule Object do
+    @enforce_keys [:id, :name, :type, :flags, :owner_id, :parent_id, :location_id, :link_id]
+    defstruct(@enforce_keys)
+    alias __MODULE__, as: Obj
+
+    def load(%DB.Object{} = obj) do
+      Map.from_struct(obj)
+      |> Map.take(@enforce_keys)
+      |> then(&struct!(Obj, &1))
+    end
+  end
+
+  defp load_objects, do: DB.Repo.all(DB.Object) |> Enum.map(&Object.load/1)
+
+  defp index_objects(objs) do
+    objs
+    |> Enum.map(fn o -> {o.id, o} end)
+    |> then(&:ets.insert(@objects_ets, &1))
+  end
+
+  defp index_contents(objs) do
+    objs
+    |> Enum.map(fn o -> {o.location_id, o.id} end)
+    |> Enum.reject(fn {loc, _} -> is_nil(loc) end)
+    |> then(&:ets.insert(@contents_ets, &1))
+  end
+end

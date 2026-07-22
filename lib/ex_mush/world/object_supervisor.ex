@@ -15,7 +15,7 @@ defmodule ExMUSH.World.ObjectSupervisor do
 
   def ensure_started(obj_id) do
     case ObjectRegistry.lookup(obj_id) do
-      {pid, value} -> {pid, value}
+      {pid, value} -> {:ok, pid, value}
       nil -> start_object(obj_id)
     end
   end
@@ -27,8 +27,12 @@ defmodule ExMUSH.World.ObjectSupervisor do
       {:error, _} = err -> err
     end
     |> then(fn
-      {:ok, pid} -> {^pid, _value} = ObjectRegistry.lookup(obj_id)
-      {:error, _} = err -> err
+      {:ok, pid} ->
+        {^pid, value} = ObjectRegistry.lookup(obj_id)
+        {:ok, pid, value}
+
+      {:error, _} = err ->
+        err
     end)
   end
 end

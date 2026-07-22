@@ -4,6 +4,7 @@ defmodule ExMUSH do
   def start(_type, _args) do
     [
       ExMUSH.DB.Repo,
+      ExMUSH.World.ObjectDirectory,
       ExMUSH.World.ObjectRegistry,
       ExMUSH.World.ObjectSupervisor
     ]
