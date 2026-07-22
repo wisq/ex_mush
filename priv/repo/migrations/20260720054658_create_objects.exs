@@ -10,15 +10,20 @@ defmodule ExMUSH.DB.Repo.Migrations.CreateObjects do
       add :flags, {:array, :string}, null: false
 
       add :owner_id, references("objects"), null: false
-      add :parent_id, references("objects"), null: true
-      add :location_id, references("objects"), null: true
-      add :link_id, references("objects"), null: false
+      add :parent_id, references("objects")
+      add :location_id, references("objects")
+      add :link_id, references("objects")
     end
 
     # Rooms MUST NOT have a location.
-    # Exits MAY have a location (i.e. a destination — their source is their link_id).
     # Everything else MUST have a location.
     create constraint("objects", :objects_location_optional, 
-      check: "((location_id IS NULL) = (type = 'room')) OR (type = 'exit')")
+      check: "(location_id IS NULL) = (type = 'room')")
+
+    # Players and thinks MUST have a link (home).
+    # Rooms MAY have a link (dropto).
+    # Exits MAY have a link (destination).
+    create constraint("objects", :objects_link_optional,
+      check: "link_id IS NOT NULL OR type IN ('room', 'exit')")
   end
 end

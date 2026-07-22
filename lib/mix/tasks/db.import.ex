@@ -200,6 +200,7 @@ defmodule ExMUSH.Import.Object do
       attrs |> Enum.map(&Attribute.parse(id, &1))
     end)
     |> then(&struct!(Object, &1))
+    |> alter_by_type()
   end
 
   def row_data(%Object{} = obj) do
@@ -224,6 +225,35 @@ defmodule ExMUSH.Import.Object do
   defp parse_data(:type, 2), do: [type: :thing]
   defp parse_data(:type, 4), do: [type: :exit]
   defp parse_data(:type, 8), do: [type: :player]
+
+  defp alter_by_type(%Object{type: :room, location_id: loc_id} = obj) do
+    # In the DB, a room's location ID is its dropto (set via @link),
+    # while its "exits" value (link ID) points to the first exit.
+    # So we ditch link ID (don't need it) and move location ID to it.
+    %Object{obj | location_id: nil, link_id: loc_id}
+  end
+
+  defp alter_by_type(%Object{type: :exit, location_id: loc_id, link_id: link_id} = obj) do
+    # PennMUSH seems to do exits "backwards".
+    # From a regular (builder, non-MUSHcoder) player's point of view:
+    #
+    #  - an exit's location is its source (changed with @teleport)
+    #  - an exit's @link target is its destination
+    #
+    # But in the database, and in MUSHcode, location (`loc()`) points to the
+    # destination room, and link (`home()`) points to the source room.
+    #
+    # If that wasn't weird enough, `room()` — nominally a recursive upwards
+    # `loc()` until it finds a room — is the source room, not the destination
+    # like `loc()`.
+    #
+    # Anyway this is all madness, and I don't want `ExMUSH.World.LocationIndex`
+    # to have to deal with link IDs.  So let's just swap them and make things a
+    # bit more sensible.
+    %Object{obj | location_id: link_id, link_id: loc_id}
+  end
+
+  defp alter_by_type(%Object{type: type} = obj) when type in [:player, :thing], do: obj
 end
 
 defmodule ExMUSH.Import.Attribute do
