@@ -1,7 +1,7 @@
 defmodule ExMUSH.World.ObjectSupervisor do
   use DynamicSupervisor
 
-  alias ExMUSH.World.Object
+  alias ExMUSH.World.ObjectServer
   alias ExMUSH.World.ObjectRegistry
 
   def start_link(init_arg) do
@@ -21,7 +21,7 @@ defmodule ExMUSH.World.ObjectSupervisor do
   end
 
   defp start_object(obj_id) do
-    case DynamicSupervisor.start_child(__MODULE__, {Object, obj_id}) do
+    case DynamicSupervisor.start_child(__MODULE__, {ObjectServer, obj_id}) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_registered, pid}} -> {:ok, pid}
       {:error, _} = err -> err

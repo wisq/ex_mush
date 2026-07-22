@@ -1,6 +1,7 @@
 defmodule ExMUSH.World.ObjectDirectory do
   use GenServer
   alias ExMUSH.DB
+  alias ExMUSH.World
 
   @objects_ets __MODULE__.ETS.Objects
   @contents_ets __MODULE__.ETS.Contents
@@ -39,19 +40,7 @@ defmodule ExMUSH.World.ObjectDirectory do
     {:ok, nil}
   end
 
-  defmodule Object do
-    @enforce_keys [:id, :name, :type, :flags, :owner_id, :parent_id, :location_id, :link_id]
-    defstruct(@enforce_keys)
-    alias __MODULE__, as: Obj
-
-    def load(%DB.Object{} = obj) do
-      Map.from_struct(obj)
-      |> Map.take(@enforce_keys)
-      |> then(&struct!(Obj, &1))
-    end
-  end
-
-  defp load_objects, do: DB.Repo.all(DB.Object) |> Enum.map(&Object.load/1)
+  defp load_objects, do: DB.Repo.all(DB.Object) |> Enum.map(&World.Object.load/1)
 
   defp index_objects(objs) do
     objs
