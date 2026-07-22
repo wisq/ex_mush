@@ -11,12 +11,15 @@ defmodule ExMUSH.World.ObjectDirectory do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  def owner_id(obj_id), do: get(obj_id).owner_id
-  def parent_id(obj_id), do: get(obj_id).parent_id
-  def location_id(obj_id), do: get(obj_id).location_id
-  def link_id(obj_id), do: get(obj_id).link_id
+  [:owner, :parent, :location, :link]
+  |> Enum.each(fn key ->
+    def unquote(key)(obj_id), do: unquote(:"#{key}_id")(obj_id) |> get()
+    def unquote(:"#{key}_id")(obj_id), do: get(obj_id).unquote(:"#{key}_id")
+  end)
 
-  defp get(obj_id) do
+  def get(nil), do: nil
+
+  def get(obj_id) do
     case :ets.lookup(@objects_ets, obj_id) do
       [{^obj_id, obj}] -> obj
       [] -> raise "object #{obj_id} not found"

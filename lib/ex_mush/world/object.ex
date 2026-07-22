@@ -17,11 +17,13 @@ defmodule ExMUSH.World.Object do
     |> then(&struct!(Object, &1))
   end
 
-  defdelegate owner_id(obj_id), to: ObjectDirectory
-  defdelegate parent_id(obj_id), to: ObjectDirectory
-  defdelegate location_id(obj_id), to: ObjectDirectory
-  defdelegate link_id(obj_id), to: ObjectDirectory
-  defdelegate contents(obj_id), to: ObjectDirectory
+  defdelegate get(obj_id), to: ObjectDirectory
+
+  [:owner, :parent, :location, :link]
+  |> Enum.each(fn key ->
+    defdelegate unquote(key)(obj_id), to: ObjectDirectory
+    defdelegate unquote(:"#{key}_id")(obj_id), to: ObjectDirectory
+  end)
 
   defdelegate attribute(obj_id, attr_name), to: ObjectServer
 end
