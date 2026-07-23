@@ -1,4 +1,4 @@
-defmodule ExMUSH do
+defmodule ExMUSH.Application do
   use Application
 
   def start(_type, _args) do
