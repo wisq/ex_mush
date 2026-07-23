@@ -2,28 +2,55 @@ defmodule ExMUSH.World.Object do
   alias __MODULE__
   alias ExMUSH.DB
   alias ExMUSH.World.{ObjectDirectory, ObjectServer}
+  alias ExMUSH.ObjectID, as: OID
 
-  @enforce_keys [:id, :name, :type, :flags, :owner_id, :parent_id, :location_id, :link_id]
+  @base_keys [:name, :type, :flags]
+  @time_keys [
+    ctime: :inserted_at,
+    mtime: :updated_at
+  ]
+  @oid_keys [
+    oid: :id,
+    owner_oid: :owner_id,
+    parent_oid: :parent_id,
+    location_oid: :location_id,
+    link_oid: :link_id
+  ]
+  @enforce_keys @base_keys ++ Keyword.keys(@time_keys) ++ Keyword.keys(@oid_keys)
   defstruct(@enforce_keys)
 
-  defmodule Attribute do
-    @enforce_keys [:name, :owner_id, :flags, :value]
-    defstruct(@enforce_keys)
-  end
-
   def load(%DB.Object{} = obj) do
-    Map.from_struct(obj)
-    |> Map.take(@enforce_keys)
-    |> then(&struct!(Object, &1))
+    base =
+      Map.take(obj, @base_keys)
+      |> Enum.to_list()
+
+    times =
+      @time_keys
+      |> Enum.map(fn {my_key, db_key} ->
+        time = Map.fetch!(obj, db_key) |> DateTime.to_unix()
+        {my_key, time}
+      end)
+
+    oids =
+      @oid_keys
+      |> Enum.map(fn {my_key, db_key} ->
+        oid = Map.fetch!(obj, db_key) |> OID.load()
+        {my_key, oid}
+      end)
+
+    struct!(Object, base ++ times ++ oids)
   end
 
-  defdelegate get(obj_id), to: ObjectDirectory
+  defdelegate get(oid), to: ObjectDirectory
 
   [:owner, :parent, :location, :link]
   |> Enum.each(fn key ->
-    defdelegate unquote(key)(obj_id), to: ObjectDirectory
-    defdelegate unquote(:"#{key}_id")(obj_id), to: ObjectDirectory
+    defdelegate unquote(key)(oid), to: ObjectDirectory
+    defdelegate unquote(:"#{key}_oid")(oid), to: ObjectDirectory
   end)
 
-  defdelegate attribute(obj_id, attr_name), to: ObjectServer
+  defdelegate content_oids(oid), to: ObjectDirectory
+  defdelegate contents(oid), to: ObjectDirectory
+
+  defdelegate attribute(oid, attr_name), to: ObjectServer
 end

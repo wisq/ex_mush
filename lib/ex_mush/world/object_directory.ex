@@ -1,5 +1,7 @@
 defmodule ExMUSH.World.ObjectDirectory do
   use GenServer
+  import ExMUSH
+  alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.DB
   alias ExMUSH.World
 
@@ -13,23 +15,43 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   [:owner, :parent, :location, :link]
   |> Enum.each(fn key ->
-    def unquote(key)(obj_id), do: unquote(:"#{key}_id")(obj_id) |> get()
-    def unquote(:"#{key}_id")(obj_id), do: get(obj_id).unquote(:"#{key}_id")
+    def unquote(key)(obj_id), do: unquote(:"#{key}_oid")(obj_id) |> get_or_nil()
+    def unquote(:"#{key}_oid")(obj_id), do: get(obj_id).unquote(:"#{key}_oid")
   end)
 
-  def get(nil), do: nil
+  def get_or_nil(~o'#-1'), do: nil
+  def get_or_nil(oid), do: get(oid)
 
-  def get(obj_id) do
-    case :ets.lookup(@objects_ets, obj_id) do
-      [{^obj_id, obj}] -> obj
-      [] -> raise "object #{obj_id} not found"
+  def get(%OID{id: id, ctime: nil} = oid) do
+    case :ets.lookup(@objects_ets, oid.id) do
+      [{^id, %World.Object{} = obj}] -> obj
+      [] -> raise "object #{oid} not found"
     end
   end
 
-  def contents(obj_id) do
-    :ets.lookup(@contents_ets, obj_id)
-    |> Enum.map(fn {^obj_id, c_id} -> c_id end)
+  def get(%OID{id: id, ctime: ctime} = oid) when is_integer(ctime) do
+    case :ets.lookup(@objects_ets, oid.id) do
+      [{^id, %World.Object{ctime: ^ctime} = obj}] -> obj
+      _ -> raise "object #{oid} not found"
+    end
   end
+
+  # Without a ctime, we can use the faster `:ets.member/2` call.
+  def exists?(%OID{id: id, ctime: nil}), do: :ets.member(@objects_ets, id)
+  def exists?(%OID{ctime: ctime} = oid), do: get(oid).ctime == ctime
+
+  def ensure_exists(oid) when is_object_id(oid) do
+    unless exists?(oid), do: raise("object #{oid} not found")
+  end
+
+  def content_oids(%OID{id: id} = oid) do
+    ensure_exists(oid)
+
+    :ets.lookup(@contents_ets, id)
+    |> Enum.map(fn {_, c_id} -> c_id end)
+  end
+
+  def contents(oid) when is_object_id(oid), do: content_oids(oid) |> Enum.map(&get/1)
 
   @impl true
   def init(_) do
@@ -47,14 +69,14 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp index_objects(objs) do
     objs
-    |> Enum.map(fn o -> {o.id, o} end)
+    |> Enum.map(fn o -> {o.oid.id, o} end)
     |> then(&:ets.insert(@objects_ets, &1))
   end
 
   defp index_contents(objs) do
     objs
-    |> Enum.map(fn o -> {o.location_id, o.id} end)
-    |> Enum.reject(fn {loc, _} -> is_nil(loc) end)
+    |> Enum.map(fn o -> {o.location_oid.id, o.oid} end)
+    |> Enum.reject(fn {loc_id, _} -> loc_id < 0 end)
     |> then(&:ets.insert(@contents_ets, &1))
   end
 end
