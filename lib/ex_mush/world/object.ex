@@ -16,7 +16,15 @@ defmodule ExMUSH.World.Object do
     location_oid: :location_id,
     link_oid: :link_id
   ]
-  @enforce_keys @base_keys ++ Keyword.keys(@time_keys) ++ Keyword.keys(@oid_keys)
+  @derived_keys [:aliases]
+
+  @enforce_keys [
+                  @base_keys,
+                  Keyword.keys(@time_keys),
+                  Keyword.keys(@oid_keys),
+                  @derived_keys
+                ]
+                |> Enum.reduce(&Kernel.++/2)
   defstruct(@enforce_keys)
 
   def load(%DB.Object{} = obj) do
@@ -38,7 +46,16 @@ defmodule ExMUSH.World.Object do
         {my_key, oid}
       end)
 
-    struct!(Object, base ++ times ++ oids)
+    aliases =
+      case obj.attributes do
+        [%DB.Object.Attribute{name: "ALIAS", value: v}] ->
+          [aliases: v |> String.split(";") |> Enum.map(&String.trim/1)]
+
+        [] ->
+          [aliases: []]
+      end
+
+    struct!(Object, base ++ times ++ oids ++ aliases)
   end
 
   defdelegate get(oid), to: ObjectDirectory
