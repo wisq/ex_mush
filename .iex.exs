@@ -1,2 +1,2 @@
 import ExMUSH
-alias ExMUSH.{DB, World}
+alias ExMUSH.{DB, World, Command}
