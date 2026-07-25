@@ -24,7 +24,8 @@ defmodule ExMUSH.MixProject do
     [
       {:ecto_sql, "~> 3.0"},
       {:postgrex, ">= 0.0.0"},
-      {:thousand_island, "~> 1.0"}
+      {:thousand_island, "~> 1.0"},
+      {:nimble_parsec, "~> 1.0"}
     ]
   end
 end
