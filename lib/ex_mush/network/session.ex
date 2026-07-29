@@ -1,5 +1,6 @@
 defmodule ExMUSH.Network.Session do
   use GenServer
+  import ExMUSH
   alias ExMUSH.Command
   alias ExMUSH.Network.SessionRegistry
 
@@ -50,15 +51,27 @@ defmodule ExMUSH.Network.Session do
   end
 
   @impl true
-  def handle_cast({:input, line}, state) do
-    IO.inspect(line, label: "input")
-    do_output("You sent: #{inspect(line)}", state)
+  def handle_cast({:input, line}, %State{player_oid: oid} = state) when is_object_id(oid) do
+    # FIXME: this is EXTREMELY temporary
+    #  - add commands to per-session queue
+    #    - eventually TODO: handle queue overrun
+    #  - push one command at a time to the player's object's command queue process
+    #  - wait for finish, send the next command
+    case Command.Parser.parse(line) do
+      {:ok, %Command.Prepared{} = prepared} ->
+        Command.Prepared.execute(prepared, Command.State.for_player(oid))
+
+      {:error, _} = err ->
+        err
+        |> inspect(pretty: true)
+        |> do_output(state)
+    end
+
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:output, iodata}, state) do
-    IO.inspect(iodata, label: "output")
     do_output(iodata, state)
     {:noreply, state}
   end

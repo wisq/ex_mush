@@ -19,6 +19,10 @@ defmodule ExMUSH.Application do
   end
 
   defp telnet_options do
-    [port: 4202, handler_module: ExMUSH.Network.Telnet]
+    [
+      port: 4202,
+      handler_module: ExMUSH.Network.Telnet,
+      read_timeout: :infinity
+    ]
   end
 end
