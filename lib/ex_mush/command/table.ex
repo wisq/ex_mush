@@ -30,25 +30,22 @@ defmodule ExMUSH.Command.Table do
     name = String.downcase(name)
 
     case :ets.lookup(@ets, name) do
-      [{^name, oid}] -> {:ok, oid}
+      [{^name, command}] -> {:ok, command}
       [] -> partial_match(name)
     end
   end
 
   defp partial_match(name) do
     case :ets.next_lookup(@ets, name) do
-      {^name <> _ = match, [{match, oid}]} ->
+      {^name <> _ = match, [{match, command}]} ->
         # We found a partial match, but if the next ALSO matches, it's ambiguous.
         case :ets.next(@ets, match) do
-          ^name <> _ -> {:error, :ambiguous_match}
-          _ -> {:ok, oid}
+          ^name <> _ -> {:error, {:ambiguous_command, name}}
+          _ -> {:ok, command}
         end
 
-      {_, [_]} ->
-        {:error, :no_match}
-
-      :"$end_of_table" ->
-        {:error, :no_match}
+      _ ->
+        {:error, {:unknown_command, name}}
     end
   end
 end

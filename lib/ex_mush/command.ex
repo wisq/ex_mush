@@ -17,7 +17,7 @@ defmodule ExMUSH.Command do
           @command_list [
             name: @command,
             aliases: @aliases,
-            switches: @switches,
+            switches: @switches |> Map.new(fn sw -> {sw, String.to_atom(sw)} end),
             parser: @parser,
             execute: ref
           ]
@@ -28,7 +28,7 @@ defmodule ExMUSH.Command do
           @parser nil
         end
 
-        def unquote(definition), do: unquote(block)
+        def unquote(definition), unquote(block)
       end
     end
 
@@ -51,5 +51,30 @@ defmodule ExMUSH.Command do
 
   def build(attrs) do
     struct!(Command, attrs)
+  end
+
+  def switch_map(%Command{name: cmd, switches: defined}, requested) do
+    base = defined |> Map.new(fn {_name, key} -> {key, false} end)
+
+    requested
+    |> Enum.reduce_while({:ok, base}, fn req, {:ok, switches} ->
+      case matching_switches(defined, String.downcase(req)) do
+        [key] -> {:cont, {:ok, Map.put(switches, key, true)}}
+        [] -> {:halt, {:error, {:unknown_switch, cmd, req}}}
+        [_, _ | _] -> {:halt, {:error, {:ambiguous_switch, cmd, req}}}
+      end
+    end)
+  end
+
+  defp matching_switches(defined, requested) do
+    case Map.fetch(defined, requested) do
+      {:ok, key} ->
+        [key]
+
+      :error ->
+        defined
+        |> Enum.filter(fn {name, _key} -> String.starts_with?(name, requested) end)
+        |> Enum.map(fn {_name, key} -> key end)
+    end
   end
 end
