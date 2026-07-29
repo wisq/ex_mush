@@ -1,6 +1,7 @@
 defmodule ExMUSH.Command.Parser do
   import NimbleParsec
   alias ExMUSH.Command
+  alias ExMUSH.Action
 
   space = ascii_string([?\s], min: 1) |> ignore()
   command_name = ascii_string([?@, ?A..?Z, ?a..?z], min: 1, max: 20)
@@ -18,7 +19,7 @@ defmodule ExMUSH.Command.Parser do
          {:ok, command} <- Command.Table.lookup(cmdname),
          args <- parse_args(command.parser, argstr),
          {:ok, switch_map} <- Command.switch_map(command, switch_strs) do
-      {:ok, %Command.Prepared{command: command, switches: switch_map, args: args}}
+      {:ok, %Action{command: command, switches: switch_map, args: args}}
     else
       {:error, _, _, _, _, _} -> {:error, :no_match}
       {:error, _} = err -> err

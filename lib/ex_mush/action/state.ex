@@ -1,4 +1,4 @@
-defmodule ExMUSH.Command.State do
+defmodule ExMUSH.Action.State do
   import ExMUSH
 
   @enforce_keys [:enactor, :executor, :caller]

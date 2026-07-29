@@ -1,18 +1,19 @@
-defmodule ExMUSH.Command.Prepared do
+defmodule ExMUSH.Action do
   @enforce_keys [:command, :switches, :args]
   defstruct(@enforce_keys)
 
+  alias __MODULE__
   alias ExMUSH.Command
 
   def execute(
-        %Command.Prepared{
+        %Action{
           command: %Command{
             execute: {mod, fun}
           },
           switches: switches,
           args: args
         },
-        %Command.State{} = state
+        %Action.State{} = state
       ) do
     apply(mod, fun, [state, switches] ++ args)
   end

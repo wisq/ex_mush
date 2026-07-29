@@ -2,6 +2,7 @@ defmodule ExMUSH.Network.Session do
   use GenServer
   import ExMUSH
   alias ExMUSH.Command
+  alias ExMUSH.Action
   alias ExMUSH.Network.SessionRegistry
 
   def child_spec(opts) do
@@ -58,8 +59,8 @@ defmodule ExMUSH.Network.Session do
     #  - push one command at a time to the player's object's command queue process
     #  - wait for finish, send the next command
     case Command.Parser.parse(line) do
-      {:ok, %Command.Prepared{} = prepared} ->
-        Command.Prepared.execute(prepared, Command.State.for_player(oid))
+      {:ok, %Action{} = prepared} ->
+        Action.execute(prepared, Action.State.for_player(oid))
 
       {:error, _} = err ->
         err
