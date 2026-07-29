@@ -3,6 +3,7 @@ defmodule ExMUSH.World.Object do
   alias ExMUSH.DB
   alias ExMUSH.World.{ObjectDirectory, ObjectServer}
   alias ExMUSH.ObjectID, as: OID
+  alias ExMUSH.Network
 
   @base_keys [:name, :type, :flags]
   @time_keys [
@@ -70,4 +71,10 @@ defmodule ExMUSH.World.Object do
   defdelegate contents(oid), to: ObjectDirectory
 
   defdelegate attribute(oid, attr_name), to: ObjectServer
+
+  def tell(oid, iodata) do
+    if get(oid).type == :player do
+      Network.SessionRegistry.broadcast(oid, iodata)
+    end
+  end
 end

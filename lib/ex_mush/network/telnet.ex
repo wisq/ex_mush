@@ -15,13 +15,13 @@ defmodule ExMUSH.Network.Telnet do
     )
   end
 
-  @impl true
+  @impl ThousandIsland.Handler
   def handle_connection(socket, _state) do
     peer = get_peer_name(socket)
     fd = get_socket_fd(socket)
 
     Logger.info("Received connection on #{fd} from #{peer}.")
-    {:ok, session} = SessionSupervisor.start_session(self())
+    {:ok, session} = SessionSupervisor.start_session(self(), %{peer: peer, fd: fd})
 
     state = %State{
       peer: peer,
@@ -32,12 +32,12 @@ defmodule ExMUSH.Network.Telnet do
     {:continue, state}
   end
 
-  @impl true
+  @impl ThousandIsland.Handler
   def handle_close(_socket, state) do
     Logger.info("Lost connection on #{state.fd} from #{state.peer}.")
   end
 
-  @impl true
+  @impl ThousandIsland.Handler
   def handle_data(msg, socket, state) do
     msg
     |> String.split(~r/\r?\n/, trim: false)

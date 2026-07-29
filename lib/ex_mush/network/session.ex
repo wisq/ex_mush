@@ -1,6 +1,7 @@
 defmodule ExMUSH.Network.Session do
   use GenServer
   alias ExMUSH.Command
+  alias ExMUSH.Network.SessionRegistry
 
   def child_spec(opts) do
     super(opts)
@@ -9,24 +10,26 @@ defmodule ExMUSH.Network.Session do
 
   def start_link(opts) do
     {net_pid, opts} = Keyword.pop!(opts, :net_pid)
-    GenServer.start_link(__MODULE__, net_pid, opts)
+    {conn_info, opts} = Keyword.pop!(opts, :conn_info)
+    GenServer.start_link(__MODULE__, {net_pid, conn_info}, opts)
   end
 
   def input(pid, line), do: GenServer.cast(pid, {:input, line})
   def output(pid, iodata), do: GenServer.cast(pid, {:output, iodata})
 
   defmodule State do
-    @enforce_keys [:net_pid]
+    @enforce_keys [:net_pid, :conn_info]
     defstruct(
       net_pid: nil,
+      conn_info: nil,
       player_oid: nil
     )
   end
 
   @impl true
-  def init(net_pid) do
+  def init({net_pid, conn_info}) do
     Process.link(net_pid)
-    state = %State{net_pid: net_pid}
+    state = %State{net_pid: net_pid, conn_info: conn_info}
     do_output(Command.Login.motd(), state)
     {:ok, state}
   end
@@ -36,7 +39,7 @@ defmodule ExMUSH.Network.Session do
     with {:ok, cmd} <- Command.Login.parse(line) do
       case Command.Login.execute(cmd, &do_output(&1, state)) do
         :close -> {:stop, :normal}
-        {:connected, oid} -> {:noreply, %State{state | player_oid: oid}}
+        {:connected, oid} -> {:noreply, do_connect(oid, state)}
         :ok -> {:noreply, state}
       end
     else
@@ -63,5 +66,10 @@ defmodule ExMUSH.Network.Session do
   defp do_output(iodata, %State{net_pid: pid}) do
     send(pid, {:output, iodata})
     :ok
+  end
+
+  defp do_connect(new_oid, %State{player_oid: nil, conn_info: info} = state) do
+    SessionRegistry.register(new_oid, info)
+    %State{state | player_oid: new_oid}
   end
 end
