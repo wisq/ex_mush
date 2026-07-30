@@ -1,4 +1,4 @@
-defmodule ExMUSH.Action.State do
+defmodule ExMUSH.Context do
   import ExMUSH
 
   @enforce_keys [:enactor, :executor, :caller]
@@ -7,6 +7,6 @@ defmodule ExMUSH.Action.State do
   alias __MODULE__
 
   def for_player(oid) when is_object_id(oid) do
-    %State{enactor: oid, executor: oid, caller: oid}
+    %Context{enactor: oid, executor: oid, caller: oid}
   end
 end

@@ -1,2 +1,2 @@
-import ExMUSH
-alias ExMUSH.{DB, World, Command}
+import_if_available(ExMUSH)
+alias ExMUSH.{DB, World, Command, Action}

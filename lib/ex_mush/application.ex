@@ -8,6 +8,8 @@ defmodule ExMUSH.Application do
       ExMUSH.World.ObjectRegistry,
       ExMUSH.World.ObjectSupervisor,
       ExMUSH.Command.Table,
+      ExMUSH.Action.Supervisor,
+      ExMUSH.ActionList.Supervisor,
       ExMUSH.Network.SessionRegistry,
       ExMUSH.Network.SessionSupervisor,
       {ThousandIsland, telnet_options()}

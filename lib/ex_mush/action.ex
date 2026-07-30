@@ -4,6 +4,7 @@ defmodule ExMUSH.Action do
 
   alias __MODULE__
   alias ExMUSH.Command
+  alias ExMUSH.Context
 
   def execute(
         %Action{
@@ -13,8 +14,21 @@ defmodule ExMUSH.Action do
           switches: switches,
           args: args
         },
-        %Action.State{} = state
+        %Context{} = ctx
       ) do
-    apply(mod, fun, [state, switches] ++ args)
+    apply(mod, fun, [ctx, switches] ++ args)
+  end
+
+  def child_spec(%Action{} = action, %Context{} = ctx) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [action, ctx]},
+      restart: :temporary
+    }
+  end
+
+  def start_link(%Action{} = action, %Context{} = ctx) do
+    pid = spawn_link(__MODULE__, :execute, [action, ctx])
+    {:ok, pid}
   end
 end
