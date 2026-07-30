@@ -12,5 +12,10 @@ defmodule ExMUSH.DB.Repo.Migrations.CreateObjectAttributes do
       add :owner_id, references("objects"), null: false
       add :flags, {:array, :string}, null: false
     end
+
+    create unique_index("object_attributes", [:object_id, :name])
+
+    create constraint("object_attributes", :object_attributes_name_uppercase,
+      check: "name = UPPER(name)")
   end
 end
