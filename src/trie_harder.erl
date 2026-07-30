@@ -1,10 +1,10 @@
 -module(trie_harder).
 -export([build/1, insert/2, find/2, prefix_search/3]).
 
--record(node, {children = #{} :: #{integer() => #node{}}, exists = false :: boolean()}).
+-record(node, {children = #{} :: #{integer() => #node{}}, exists = false :: boolean(), value = nil :: term()}).
 
 
--spec build(list(binary())) -> #node{}.
+-spec build(list({binary(), term()})) -> #node{}.
 build(List) -> build_internal(List, #node{}).
 
 
@@ -13,25 +13,29 @@ build_internal([Head | Tail], Trie) ->
     build_internal(Tail, insert(Trie, Head)).
 
 
--spec insert(#node{}, binary()) -> #node{}.
-insert(Node, <<>>) -> Node#node{exists = true};
-insert(#node{children = Children} = Node, <<First, Rest/binary>>) ->
+-spec insert(#node{}, {binary(), term()}) -> #node{}.
+insert(Node, {<<>>, Value}) -> Node#node{exists = true, value = Value};
+insert(#node{children = Children} = Node, {<<First, Rest/binary>>, Value}) ->
     case Children of
-        #{First := Child} -> Node#node{children = Children#{First := insert(Child, Rest)}};
-        _ -> Node#node{children = Children#{First => insert(#node{}, Rest)}}
+        #{First := Child} -> Node#node{children = Children#{First := insert(Child, {Rest, Value})}};
+        _ -> Node#node{children = Children#{First => insert(#node{}, {Rest, Value})}}
     end.
 
 
--spec find(#node{}, binary()) -> boolean().
-find(Node, <<>>) -> Node#node.exists;
+-spec find(#node{}, binary()) -> {ok, term()} | error.
+find(Node, <<>>) ->
+    case Node#node.exists of
+        true -> {ok, Node#node.value};
+        false -> error
+    end;
 find(#node{children = Children}, <<First, Rest/binary>>) ->
     case Children of
         #{First := Child} -> find(Child, Rest);
-        _ -> false
+        _ -> error
     end.
 
 
--spec prefix_search(#node{}, binary(), pos_integer()) -> list(binary()).
+-spec prefix_search(#node{}, binary(), pos_integer()) -> list({binary(), term()}).
 prefix_search(Trie, Prefix, Limit) ->
     case find_internal(Trie, Prefix) of
         undefined -> [];
@@ -42,10 +46,10 @@ prefix_search(Trie, Prefix, Limit) ->
     end.
 
 
--spec collect_values(#node{}, list(), pos_integer(), non_neg_integer(), list(binary())) -> {non_neg_integer(), list(binary())}.
+-spec collect_values(#node{}, list(), pos_integer(), non_neg_integer(), list(binary())) -> {non_neg_integer(), list({binary(), term()})}.
 collect_values(Node, PrefixList, Limit, Count, Acc) ->
     {NextCount, NextAcc} = case Node#node.exists of
-                               true -> {Count + 1, [iolist_to_binary(lists:reverse(PrefixList)) | Acc]};
+                               true -> {Count + 1, [{iolist_to_binary(lists:reverse(PrefixList)), Node#node.value} | Acc]};
                                false -> {Count, Acc}
                            end,
     if
