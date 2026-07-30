@@ -11,6 +11,8 @@ defmodule ExMUSH.World.Matching do
       preferred_type: nil,
       # Require exact matches only
       exact_match: false,
+      # Allow ambiguous matches, always return one of them
+      allow_ambiguous: false,
       # Match basic strings like "me" and "here"
       me: true,
       here: true,
@@ -44,19 +46,21 @@ defmodule ExMUSH.World.Matching do
     do: ObjectDirectory.match_player(pname, :exact)
 
   def locate(_, "#" <> idstr, %Opts{oid: true}) do
-    case Integer.parse(idstr) do
-      {id, ""} -> {:ok, ObjectID.new(id)}
+    with {id, ""} <- Integer.parse(idstr),
+         oid <- ObjectID.new(id),
+         true <- ObjectDirectory.exists?(oid) do
+      {:ok, oid}
+    else
       _ -> {:error, :no_match}
     end
   end
 
-  # Match origin's location, or items or exits in it
-  # location: true,
-  # nearby_objects: true,
-  # nearby_exits: true,
-  # Match items in origin's inventory or own exit list
-  # inventory: true,
-  # exits: true
+  def locate(origin_oid, text, %Opts{always_players: true} = opts) do
+    case ObjectDirectory.match_player(text, :exact) do
+      {:ok, oid} -> {:ok, oid}
+      {:error, :no_match} -> locate(origin_oid, text, %Opts{opts | always_players: false})
+    end
+  end
 
   def locate(origin_oid, text, %Opts{} = opts) when is_object_id(origin_oid) do
     origin = ObjectDirectory.get(origin_oid)
@@ -105,16 +109,17 @@ defmodule ExMUSH.World.Matching do
     end
   end
 
-  defp search_objects(objects, text, %Opts{exact_match: true}), do: search_exact(objects, text)
+  defp search_objects(objects, text, %Opts{exact_match: true} = opts),
+    do: search_exact(objects, text, opts)
 
-  defp search_objects(objects, text, %Opts{exact_match: false}) do
-    case search_exact(objects, text) do
-      {:error, :no_match} -> search_fuzzy(objects, text)
+  defp search_objects(objects, text, %Opts{exact_match: false} = opts) do
+    case search_exact(objects, text, opts) do
+      {:error, :no_match} -> search_fuzzy(objects, text, opts)
       other -> other
     end
   end
 
-  defp search_exact(objects, text) do
+  defp search_exact(objects, text, opts) do
     objects
     |> Enum.filter(fn %Object{} = obj ->
       text in all_names(obj, :exact)
@@ -122,11 +127,11 @@ defmodule ExMUSH.World.Matching do
     |> then(fn
       [] -> {:error, :no_match}
       [%Object{oid: oid}] -> {:ok, oid}
-      [_, _ | _] -> {:error, :ambiguous_match}
+      [_, _ | _] = list -> maybe_ambiguous(list, opts)
     end)
   end
 
-  defp search_fuzzy(objects, text) do
+  defp search_fuzzy(objects, text, opts) do
     objects
     |> Enum.filter(fn %Object{} = obj ->
       all_names(obj, :fuzzy)
@@ -135,7 +140,7 @@ defmodule ExMUSH.World.Matching do
     |> then(fn
       [] -> {:error, :no_match}
       [%Object{oid: oid}] -> {:ok, oid}
-      [_, _ | _] -> {:error, :ambiguous_match}
+      [_, _ | _] = list -> maybe_ambiguous(list, opts)
     end)
   end
 
@@ -162,4 +167,7 @@ defmodule ExMUSH.World.Matching do
   end
 
   defp all_names(%Object{name: name}, _), do: [String.downcase(name)]
+
+  defp maybe_ambiguous([head | _], %Opts{allow_ambiguous: true}), do: {:ok, head}
+  defp maybe_ambiguous(_, %Opts{allow_ambiguous: false}), do: {:error, :ambiguous_match}
 end
