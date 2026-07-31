@@ -54,9 +54,13 @@ defmodule ExMUSH.Network.Session do
 
   @impl true
   def handle_cast({:input, line}, %State{player_oid: oid} = state) when is_object_id(oid) do
-    {:ok, _} =
-      Command.Parser.parse(line)
-      |> Action.Supervisor.run(Context.for_player(oid))
+    line = String.trim(line)
+
+    if line != "" do
+      {:ok, _} =
+        Command.Parser.parse(line)
+        |> Action.Supervisor.run(Context.for_player(oid))
+    end
 
     {:noreply, state}
   end
