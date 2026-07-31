@@ -18,9 +18,7 @@ defmodule ExMUSH.Action.Supervisor do
     Process.monitor(pid)
 
     receive do
-      {:DOWN, _, :process, ^pid, reason} ->
-        IO.inspect(reason, label: "reason")
-        {:ok, reason}
+      {:DOWN, _, :process, ^pid, reason} -> {:ok, reason}
     end
   end
 end
