@@ -358,20 +358,16 @@ defmodule ExMUSH.Import.Parse do
     end)
   end
 
-  @obj_flags Ecto.Enum.mappings(ExMUSH.DB.Object, :flags)
-             |> Map.new(fn {atom, str} -> {String.upcase(str), atom} end)
-
-  @attr_flags Ecto.Enum.mappings(ExMUSH.DB.Object.Attribute, :flags)
-              |> Map.new(fn {atom, str} -> {String.upcase(str), atom} end)
+  @obj_flags ExMUSH.World.Object.Flags.flags_by_name()
+  @attr_flags %{}
 
   def object_flags(fstr), do: parse_flags(fstr, @obj_flags)
   def attribute_flags(fstr), do: parse_flags(fstr, @attr_flags)
 
-  defp parse_flags(fstr, flags) do
-    fstr
-    |> String.downcase()
-    |> String.split()
-    |> Enum.map(&Map.get(flags, &1))
-    |> Enum.reject(&is_nil/1)
+  defp parse_flags(flags_str, flags_by_name) do
+    flags_by_name
+    |> Map.take(flags_str |> String.split())
+    |> Map.values()
+    |> Enum.map(& &1.key)
   end
 end

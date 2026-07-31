@@ -26,7 +26,9 @@ defmodule ExMUSH.World.Object.Flags do
     %Flag{key: :dark, name: "DARK", letter: ?D},
     %Flag{key: :light, name: "LIGHT", letter: ?l}
   ]
+  @flags_by_name Map.new(@flags, fn %Flag{name: n} = f -> {n, f} end)
 
+  def flags_by_name, do: @flags_by_name
   def flag_keys, do: @flags |> Enum.map(& &1.key)
 
   def letters(%Object{} = this) do
