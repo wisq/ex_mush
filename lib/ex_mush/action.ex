@@ -16,7 +16,7 @@ defmodule ExMUSH.Action do
           switches: switches,
           args: args
         },
-        %Context{executor: player} = ctx
+        %Context{player: player} = ctx
       ) do
     try do
       apply(mod, fun, [ctx, switches] ++ args)

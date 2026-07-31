@@ -8,14 +8,14 @@ defmodule ExMUSH.Commands.Teleport do
 
   defcommand teleport(state, switches) do
     Object.tell(
-      state.executor,
+      state.player,
       inspect({state, switches}, label: "@teleport without args", pretty: true)
     )
   end
 
   defcommand teleport(state, switches, object \\ "me", destination) do
     Object.tell(
-      state.executor,
+      state.player,
       inspect({state, switches, object, destination}, label: "@teleport", pretty: true)
     )
   end

@@ -9,7 +9,7 @@ defmodule ExMUSH.Commands.Look do
   @switches ["outside"]
   @parser :one_arg
 
-  defcommand look(%Context{executor: player_oid}, _switches, target_name \\ "here") do
+  defcommand look(%Context{player: player_oid}, _switches, target_name \\ "here") do
     case Matching.locate(player_oid, target_name, %Matching.Opts{location: false}) do
       {:ok, target} -> Object.get(player_oid) |> do_look(target)
       {:error, :no_match} -> Object.tell(player_oid, "I don't see that here.")
@@ -17,24 +17,24 @@ defmodule ExMUSH.Commands.Look do
     end
   end
 
-  defp do_look(player, this) do
-    {inventory, exits} = Object.inventory_and_exits(this)
-    inventory = inventory |> Enum.filter(&visible?(&1, this, player))
-    exits = exits |> Enum.filter(&visible?(&1, this, player))
+  defp do_look(player, target) do
+    {inventory, exits} = Object.inventory_and_exits(target)
+    inventory = inventory |> Enum.filter(&visible?(&1, target, player))
+    exits = exits |> Enum.filter(&visible?(&1, target, player))
 
     [
-      Object.full_name(this, player),
-      look_description(this),
-      look_inventory(this, player, inventory),
-      look_exits(this, player, exits)
+      Object.full_name(target, player),
+      look_description(target),
+      look_inventory(target, player, inventory),
+      look_exits(target, player, exits)
     ]
     |> Enum.reject(&is_nil/1)
     |> Enum.intersperse("\n")
     |> then(&Object.tell(player, &1))
   end
 
-  defp look_description(this) do
-    case Object.attribute(this, "DESCRIBE") do
+  defp look_description(target) do
+    case Object.attribute(target, "DESCRIBE") do
       %Object.Attribute{value: v} -> v
       nil -> "You see nothing special."
     end
@@ -42,9 +42,9 @@ defmodule ExMUSH.Commands.Look do
 
   defp look_inventory(_, _, []), do: nil
 
-  defp look_inventory(this, player, inventory) do
+  defp look_inventory(target, player, inventory) do
     [
-      case this.type do
+      case target.type do
         :player -> "Carrying:"
         :thing -> "Carrying:"
         _ -> "Contents:"
@@ -58,7 +58,7 @@ defmodule ExMUSH.Commands.Look do
 
   defp look_exits(_, _, []), do: nil
 
-  defp look_exits(_this, _player, exits) do
+  defp look_exits(_target, _player, exits) do
     [
       "Obvious exits:",
       "\n",
