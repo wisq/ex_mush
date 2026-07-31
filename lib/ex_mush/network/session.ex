@@ -80,6 +80,12 @@ defmodule ExMUSH.Network.Session do
 
   defp do_connect(new_oid, %State{player_oid: nil, conn_info: info} = state) do
     SessionRegistry.register(new_oid, info)
+    on_connect(new_oid)
     %State{state | player_oid: new_oid}
+  end
+
+  defp on_connect(oid) do
+    {:ok, %Action{} = action} = Command.Parser.parse("look")
+    Action.Supervisor.run(action, Context.for_player(oid))
   end
 end
