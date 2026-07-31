@@ -12,8 +12,11 @@ defmodule ExMUSH.ObjectID do
   def new(id, ctime) when is_integer(id) and is_integer(ctime),
     do: %OID{id: id, ctime: ctime}
 
-  def load(nil), do: new(-1)
-  def load(id) when is_integer(id), do: new(id)
+  def from_db(nil), do: new(-1)
+  def from_db(id) when is_integer(id), do: new(id)
+
+  def to_db(%OID{id: -1}), do: nil
+  def to_db(%OID{id: id}), do: id
 
   def parse("#" <> idstr) do
     parsed =

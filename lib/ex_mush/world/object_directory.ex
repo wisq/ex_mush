@@ -180,7 +180,7 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp load_objects do
     DB.Repo.get_objects_for_directory()
-    |> Enum.map(&Object.load/1)
+    |> Enum.map(&Object.from_db/1)
   end
 
   defp index_objects(objs) do

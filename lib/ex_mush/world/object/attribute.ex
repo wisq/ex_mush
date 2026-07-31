@@ -6,10 +6,10 @@ defmodule ExMUSH.World.Object.Attribute do
   @enforce_keys [:name, :owner_id, :flags, :value]
   defstruct(@enforce_keys)
 
-  def load(%DB.Object.Attribute{} = a) do
+  def from_db(%DB.Object.Attribute{} = a) do
     %Attribute{
       name: a.name,
-      owner_id: OID.load(a.owner_id),
+      owner_id: OID.from_db(a.owner_id),
       flags: a.flags,
       value: a.value
     }

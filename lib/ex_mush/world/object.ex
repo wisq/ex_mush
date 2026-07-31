@@ -33,7 +33,7 @@ defmodule ExMUSH.World.Object do
                 |> Enum.reduce(&Kernel.++/2)
   defstruct(@enforce_keys)
 
-  def load(%DB.Object{} = obj) do
+  def from_db(%DB.Object{} = obj) do
     base =
       Map.take(obj, @base_keys)
       |> Enum.to_list()
@@ -51,7 +51,7 @@ defmodule ExMUSH.World.Object do
     oids =
       @oid_keys
       |> Enum.map(fn {my_key, db_key} ->
-        oid = Map.fetch!(obj, db_key) |> OID.load()
+        oid = Map.fetch!(obj, db_key) |> OID.from_db()
         {my_key, oid}
       end)
 

@@ -42,7 +42,7 @@ defmodule ExMUSH.World.ObjectServer do
   defp load_attributes(object_id) do
     attrs =
       DB.Repo.all_by(DB.Object.Attribute, object_id: object_id)
-      |> Enum.map(&Attribute.load/1)
+      |> Enum.map(&Attribute.from_db/1)
       |> Enum.map(fn a -> {a.name, a} end)
 
     ets = :ets.new(:attributes, [:ordered_set, :protected])
