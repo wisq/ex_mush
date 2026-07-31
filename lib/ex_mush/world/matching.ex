@@ -34,10 +34,10 @@ defmodule ExMUSH.World.Matching do
   def locate(origin_oid, text, opts \\ %Opts{})
 
   def locate(origin_oid, "me", %Opts{me: true}) when is_object_id(origin_oid),
-    do: {:ok, origin_oid}
+    do: {:ok, Object.get(origin_oid)}
 
   def locate(origin_oid, "here", %Opts{me: true}) when is_object_id(origin_oid),
-    do: {:ok, Object.location_oid(origin_oid)}
+    do: Object.location(origin_oid) |> handle_get()
 
   def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: false}),
     do: ObjectDirectory.match_player(pname, :partial)
@@ -46,10 +46,10 @@ defmodule ExMUSH.World.Matching do
     do: ObjectDirectory.match_player(pname, :exact)
 
   def locate(_, "#" <> idstr, %Opts{oid: true}) do
-    with {id, ""} <- Integer.parse(idstr),
-         oid <- ObjectID.new(id),
-         true <- ObjectDirectory.exists?(oid) do
-      {:ok, oid}
+    with {id, ""} <- Integer.parse(idstr) do
+      ObjectID.new(id)
+      |> ObjectDirectory.get()
+      |> handle_get()
     else
       _ -> {:error, :no_match}
     end
@@ -126,7 +126,7 @@ defmodule ExMUSH.World.Matching do
     end)
     |> then(fn
       [] -> {:error, :no_match}
-      [%Object{oid: oid}] -> {:ok, oid}
+      [%Object{} = obj] -> {:ok, obj}
       [_, _ | _] = list -> maybe_ambiguous(list, opts)
     end)
   end
@@ -139,24 +139,16 @@ defmodule ExMUSH.World.Matching do
     end)
     |> then(fn
       [] -> {:error, :no_match}
-      [%Object{oid: oid}] -> {:ok, oid}
+      [%Object{} = obj] -> {:ok, obj}
       [_, _ | _] = list -> maybe_ambiguous(list, opts)
     end)
   end
 
   defp maybe_get_contents(_, %Opts{inventory: false, exits: false}), do: {[], []}
-
-  defp maybe_get_contents(oid, %Opts{}) do
-    ObjectDirectory.contents(oid)
-    |> Enum.split_with(&(&1.type != :exit))
-  end
+  defp maybe_get_contents(oid, %Opts{}), do: Object.inventory_and_exits(oid)
 
   defp maybe_get_nearby(_, %Opts{nearby_objects: false, nearby_exits: false}), do: {[], []}
-
-  defp maybe_get_nearby(location_oid, %Opts{}) do
-    ObjectDirectory.contents(location_oid)
-    |> Enum.split_with(&(&1.type != :exit))
-  end
+  defp maybe_get_nearby(location_oid, %Opts{}), do: Object.inventory_and_exits(location_oid)
 
   defp all_names(%Object{type: type, name: name, aliases: aliases}, _)
        when type in [:player, :exit], do: [name | aliases] |> Enum.map(&String.downcase/1)
@@ -170,4 +162,7 @@ defmodule ExMUSH.World.Matching do
 
   defp maybe_ambiguous([head | _], %Opts{allow_ambiguous: true}), do: {:ok, head}
   defp maybe_ambiguous(_, %Opts{allow_ambiguous: false}), do: {:error, :ambiguous_match}
+
+  defp handle_get(%Object{} = obj), do: {:ok, obj}
+  defp handle_get(nil), do: {:error, :no_match}
 end

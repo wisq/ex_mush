@@ -4,7 +4,7 @@ defmodule ExMUSH.World.Login do
   alias ExMUSH.World.ObjectDirectory
 
   def connect(username, password) do
-    with {:ok, oid} <- ObjectDirectory.match_player(username, :exact),
+    with {:ok, oid} <- ObjectDirectory.match_player_oid(username, :exact),
          :ok <- check_password(oid, password) do
       {:ok, oid}
     end

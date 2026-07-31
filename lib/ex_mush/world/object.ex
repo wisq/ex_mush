@@ -1,4 +1,5 @@
 defmodule ExMUSH.World.Object do
+  import ExMUSH
   alias __MODULE__
   alias ExMUSH.DB
   alias ExMUSH.World.{ObjectDirectory, ObjectServer}
@@ -70,7 +71,15 @@ defmodule ExMUSH.World.Object do
   defdelegate content_oids(oid), to: ObjectDirectory
   defdelegate contents(oid), to: ObjectDirectory
 
-  defdelegate attribute(oid, attr_name), to: ObjectServer
+  def inventory_and_exits(%Object{oid: oid}), do: inventory_and_exits(oid)
+
+  def inventory_and_exits(oid) when is_object_id(oid) do
+    ObjectDirectory.contents(oid)
+    |> Enum.split_with(&(&1.type != :exit))
+  end
+
+  def attribute(oid, attr) when is_object_id(oid), do: ObjectServer.attribute(oid, attr)
+  def attribute(%Object{oid: oid}, attr), do: ObjectServer.attribute(oid, attr)
 
   def tell(oid, iodata) do
     if get(oid).type == :player do

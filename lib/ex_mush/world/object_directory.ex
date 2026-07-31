@@ -55,6 +55,13 @@ defmodule ExMUSH.World.ObjectDirectory do
   def contents(oid) when is_object_id(oid), do: content_oids(oid) |> Enum.map(&get/1)
 
   def match_player(name, mode \\ :partial) when mode in [:partial, :exact] do
+    case match_player_oid(name, mode) do
+      {:ok, oid} -> {:ok, get(oid)}
+      {:error, _} = err -> err
+    end
+  end
+
+  def match_player_oid(name, mode \\ :partial) when mode in [:partial, :exact] do
     name = String.downcase(name)
 
     case :ets.lookup(@players_ets, name) do
