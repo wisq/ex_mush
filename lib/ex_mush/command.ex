@@ -5,6 +5,11 @@ defmodule ExMUSH.Command do
       @before_compile ExMUSH.Command.Builder
 
       Module.register_attribute(__MODULE__, :command_list, accumulate: true)
+
+      @command nil
+      @aliases []
+      @switches []
+      @parser nil
     end
   end
 
@@ -45,7 +50,10 @@ defmodule ExMUSH.Command do
   defstruct(@enforce_keys)
 
   def all_commands do
-    [ExMUSH.Command.Basic]
+    [
+      ExMUSH.Command.Basic,
+      ExMUSH.Command.Look
+    ]
     |> Enum.flat_map(& &1.__commands__())
   end
 
