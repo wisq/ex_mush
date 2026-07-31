@@ -1,14 +1,24 @@
 defmodule ExMUSH.World.Login do
   import ExMUSH
+  alias ExMUSH.ObjectID
   alias ExMUSH.World.Object
   alias ExMUSH.World.ObjectDirectory
 
   def connect(username, password) do
-    with {:ok, oid} <- ObjectDirectory.match_player_oid(username, :exact),
+    with {:ok, oid} <- find_player(username),
          :ok <- check_password(oid, password) do
       {:ok, oid}
     end
   end
+
+  defp find_player("#" <> _ = idstr) do
+    with {:ok, oid} <- ObjectID.parse(idstr),
+         {:ok, %Object{type: :player}} <- Object.fetch(oid) do
+      {:ok, oid}
+    end
+  end
+
+  defp find_player(name), do: ObjectDirectory.match_player_oid(name, :exact)
 
   defp check_password(oid, password) when is_object_id(oid) do
     case Object.attribute(oid, "XYXXY") do
