@@ -9,7 +9,7 @@ defmodule ExMUSH.World.Object do
   alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.Network
 
-  @base_keys [:name, :type, :flags]
+  @base_keys [:name, :type]
   @time_keys [
     ctime: :inserted_at,
     mtime: :updated_at
@@ -25,6 +25,7 @@ defmodule ExMUSH.World.Object do
 
   @enforce_keys [
                   @base_keys,
+                  [:flags],
                   Keyword.keys(@time_keys),
                   Keyword.keys(@oid_keys),
                   @derived_keys
@@ -36,6 +37,8 @@ defmodule ExMUSH.World.Object do
     base =
       Map.take(obj, @base_keys)
       |> Enum.to_list()
+
+    flags = [flags: MapSet.new(obj.flags)]
 
     times =
       @time_keys
@@ -60,7 +63,7 @@ defmodule ExMUSH.World.Object do
           [aliases: []]
       end
 
-    struct!(Object, base ++ times ++ oids ++ aliases)
+    struct!(Object, base ++ flags ++ times ++ oids ++ aliases)
   end
 
   defdelegate get(oid), to: ObjectDirectory

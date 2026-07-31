@@ -33,7 +33,7 @@ defmodule ExMUSH.World.Object.Flags do
   def db_flag_keys do
     @flags
     |> Enum.filter(& &1.persisted)
-    |> Enum.map(& &1.key)
+    |> MapSet.new(& &1.key)
   end
 
   def db_flags_by_name do

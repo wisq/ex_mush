@@ -40,7 +40,7 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp add_derived_flags(%Object{type: :player} = player) do
     case ExMUSH.Network.SessionRegistry.connected?(player.oid) do
-      true -> %Object{player | flags: [:connected, player.flags]}
+      true -> %Object{player | flags: MapSet.put(player.flags, :connected)}
       false -> player
     end
   end
