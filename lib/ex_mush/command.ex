@@ -49,7 +49,12 @@ defmodule ExMUSH.Command do
   @enforce_keys [:name, :aliases, :switches, :parser, :execute]
   defstruct(@enforce_keys)
 
-  @command_modules ExMUSH.Command.Indexer.find_modules()
+  @command_files ExMUSH.Command.Indexer.command_files()
+  @command_modules ExMUSH.Command.Indexer.command_modules(@command_files)
+
+  def __mix_recompile__? do
+    ExMUSH.Command.Indexer.command_files() != @command_files
+  end
 
   def all_commands do
     @command_modules

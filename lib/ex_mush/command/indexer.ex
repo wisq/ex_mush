@@ -1,5 +1,5 @@
 defmodule ExMUSH.Command.Indexer do
-  def find_modules do
+  def command_files do
     Path.join([
       Path.dirname(__DIR__),
       "commands",
@@ -7,7 +7,10 @@ defmodule ExMUSH.Command.Indexer do
       "*.ex"
     ])
     |> Path.wildcard()
-    |> Enum.flat_map(&read_modules/1)
+  end
+
+  def command_modules(files) do
+    files |> Enum.flat_map(&read_modules/1)
   end
 
   defp read_modules(file) do
