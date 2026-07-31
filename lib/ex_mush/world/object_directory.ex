@@ -16,8 +16,9 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   [:owner, :parent, :location, :link]
   |> Enum.each(fn key ->
-    def unquote(key)(obj_id), do: unquote(:"#{key}_oid")(obj_id) |> get_or_nil()
-    def unquote(:"#{key}_oid")(obj_id), do: get(obj_id).unquote(:"#{key}_oid")
+    def unquote(key)(obj_or_oid), do: unquote(:"#{key}_oid")(obj_or_oid) |> get_or_nil()
+    def unquote(:"#{key}_oid")(oid) when is_object_id(oid), do: get(oid).unquote(:"#{key}_oid")
+    def unquote(:"#{key}_oid")(%Object{} = obj), do: obj.unquote(:"#{key}_oid")
   end)
 
   def get_or_nil(~o'#-1'), do: nil

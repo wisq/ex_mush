@@ -1,6 +1,4 @@
 defmodule ExMUSH.World.Matching do
-  import ExMUSH
-
   alias ExMUSH.ObjectID
   alias ExMUSH.World.Object
   alias ExMUSH.World.ObjectDirectory
@@ -29,15 +27,29 @@ defmodule ExMUSH.World.Matching do
       nearby_objects: true,
       nearby_exits: true
     )
+
+    def only(opts) do
+      %Opts{
+        me: false,
+        here: false,
+        oid: false,
+        star_players: false,
+        location: false,
+        inventory: false,
+        exits: false,
+        nearby_objects: false,
+        nearby_exits: false
+      }
+      |> struct!(opts)
+    end
   end
 
-  def locate(origin_oid, text, opts \\ %Opts{})
+  def locate(origin, text, opts \\ %Opts{})
 
-  def locate(origin_oid, "me", %Opts{me: true}) when is_object_id(origin_oid),
-    do: {:ok, Object.get(origin_oid)}
+  def locate(%Object{} = origin, "me", %Opts{me: true}), do: {:ok, origin}
 
-  def locate(origin_oid, "here", %Opts{me: true}) when is_object_id(origin_oid),
-    do: Object.location(origin_oid) |> handle_get()
+  def locate(%Object{} = origin, "here", %Opts{here: true}),
+    do: Object.location(origin) |> handle_get()
 
   def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: false}),
     do: ObjectDirectory.match_player(pname, :partial)
@@ -54,16 +66,15 @@ defmodule ExMUSH.World.Matching do
     end
   end
 
-  def locate(origin_oid, text, %Opts{always_players: true} = opts) do
+  def locate(origin, text, %Opts{always_players: true} = opts) do
     case ObjectDirectory.match_player(text, :exact) do
       {:ok, oid} -> {:ok, oid}
-      {:error, :no_match} -> locate(origin_oid, text, %Opts{opts | always_players: false})
+      {:error, :no_match} -> locate(origin, text, %Opts{opts | always_players: false})
     end
   end
 
-  def locate(origin_oid, text, %Opts{} = opts) when is_object_id(origin_oid) do
-    origin = ObjectDirectory.get(origin_oid)
-    {inventory, exits} = maybe_get_contents(origin_oid, opts)
+  def locate(%Object{} = origin, text, %Opts{} = opts) do
+    {inventory, exits} = maybe_get_contents(origin, opts)
     {nearby_objects, nearby_exits} = maybe_get_nearby(origin.location_oid, opts)
 
     [

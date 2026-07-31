@@ -9,15 +9,15 @@ defmodule ExMUSH.Commands.Look do
   @switches ["outside"]
   @parser :one_arg
 
-  defcommand look(%Context{player: player_oid}, _switches, target_name \\ "here") do
-    case Matching.locate(player_oid, target_name, %Matching.Opts{location: false}) do
-      {:ok, target} -> Object.get(player_oid) |> do_look(target)
-      {:error, :no_match} -> Object.tell(player_oid, "I don't see that here.")
-      {:error, :ambiguous_match} -> Object.tell(player_oid, "I'm not sure which one you mean.")
+  defcommand look(%Context{player: player}, _switches, target_name \\ "here") do
+    case Matching.locate(player, target_name, %Matching.Opts{location: false}) do
+      {:ok, target} -> do_look(target, player)
+      {:error, :no_match} -> Object.tell(player, "I don't see that here.")
+      {:error, :ambiguous_match} -> Object.tell(player, "I'm not sure which one you mean.")
     end
   end
 
-  defp do_look(player, target) do
+  defp do_look(target, player) do
     {inventory, exits} = Object.inventory_and_exits(target)
     inventory = inventory |> Enum.filter(&visible?(&1, target, player))
     exits = exits |> Enum.filter(&visible?(&1, target, player))
