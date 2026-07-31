@@ -110,6 +110,13 @@ defmodule ExMUSH.World.ObjectDirectory do
     end
   end
 
+  def move(oid, from \\ :anywhere, to)
+      when is_object_id(oid) and
+             (is_object_id(from) or from == :anywhere) and
+             is_object_id(to) do
+    GenServer.call(__MODULE__, {:move, oid, from, to})
+  end
+
   @impl true
   def init(_) do
     :ets.new(@objects_ets, [:set, :protected, :named_table])
@@ -122,6 +129,41 @@ defmodule ExMUSH.World.ObjectDirectory do
     index_contents(objs)
 
     {:ok, nil}
+  end
+
+  @impl true
+  def handle_call({:move, oid, from, to}, _, state)
+      when is_object_id(oid) and
+             (is_object_id(from) or from == :anywhere) and
+             is_object_id(to) do
+    with {:ok, %Object{} = object} <- fetch(oid) do
+      cond do
+        object.type == :room -> {:error, :cannot_move_room}
+        object.location_oid == to -> {:ok, object}
+        from != :anywhere && object.location_oid != from -> {:error, :object_moved}
+        true -> do_update(object, location_oid: to)
+      end
+    end
+    |> then(fn
+      {:ok, _} = rval -> {:reply, rval, state}
+      {:error, _} = rval -> {:reply, rval, state}
+    end)
+  end
+
+  defp do_update(%Object{} = old, attrs) when is_list(attrs) do
+    try do
+      %Object{} = new = struct!(old, attrs)
+
+      if new.oid != old.oid || new.aliases != old.aliases do
+        {:error, :illegal_modification}
+      else
+        new = %Object{new | mtime: DateTime.utc_now() |> DateTime.to_unix()}
+        :ets.insert(@objects_ets, [{new.oid.id, new}])
+        {:ok, new}
+      end
+    rescue
+      e in KeyError -> {:error, Exception.message(e)}
+    end
   end
 
   defp load_objects do
