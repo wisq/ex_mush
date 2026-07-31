@@ -8,6 +8,7 @@ defmodule ExMUSH.World.Supervisor do
   def init(_init_arg) do
     [
       ExMUSH.World.ObjectDirectory,
+      ExMUSH.World.ObjectDirectory.Writer,
       ExMUSH.World.ObjectRegistry,
       ExMUSH.World.ObjectSupervisor
     ]

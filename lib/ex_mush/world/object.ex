@@ -67,6 +67,34 @@ defmodule ExMUSH.World.Object do
     struct!(Object, base ++ flags ++ times ++ oids ++ aliases)
   end
 
+  def to_db(%Object{} = obj) do
+    base =
+      Map.take(obj, @base_keys)
+      |> Enum.to_list()
+
+    flags =
+      obj.flags
+      |> MapSet.intersection(Flags.db_flag_keys())
+      |> Enum.to_list()
+      |> then(&[flags: &1])
+
+    times =
+      @time_keys
+      |> Enum.map(fn {my_key, db_key} ->
+        {_unix, datetime} = Map.fetch!(obj, my_key)
+        {db_key, datetime}
+      end)
+
+    oids =
+      @oid_keys
+      |> Enum.map(fn {my_key, db_key} ->
+        oid = Map.fetch!(obj, my_key) |> OID.to_db()
+        {db_key, oid}
+      end)
+
+    base ++ flags ++ times ++ oids
+  end
+
   defdelegate get(oid), to: ObjectDirectory
   defdelegate fetch(oid), to: ObjectDirectory
 

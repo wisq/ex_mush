@@ -4,6 +4,7 @@ defmodule ExMUSH.World.ObjectDirectory do
   alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.DB
   alias ExMUSH.World.Object
+  alias ExMUSH.World.ObjectDirectory.Writer
 
   @objects_ets __MODULE__.ETS.Objects
   @contents_ets __MODULE__.ETS.Contents
@@ -165,6 +166,7 @@ defmodule ExMUSH.World.ObjectDirectory do
       else
         new = %Object{new | mtime: now()}
         :ets.insert(@objects_ets, [{new.oid.id, new}])
+        Writer.write(new.oid)
         {:ok, new}
       end
     rescue
