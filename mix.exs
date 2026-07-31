@@ -7,6 +7,9 @@ defmodule ExMUSH.MixProject do
       version: "0.1.0",
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
+      elixirc_options: [
+        warnings_as_errors: Mix.env() == :test
+      ],
       deps: deps(),
       aliases: aliases()
     ]
