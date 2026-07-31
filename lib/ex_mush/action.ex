@@ -24,8 +24,14 @@ defmodule ExMUSH.Action do
       exception ->
         %type{} = exception
 
+        command =
+          case cmd_name do
+            nil -> "command"
+            n when is_binary(n) -> "#{inspect(n)} command"
+          end
+
         Object.tell(player, [
-          "Your #{inspect(cmd_name)} command failed with #{inspect(type)}.  ",
+          "Your #{command} failed with #{inspect(type)}.  ",
           "Check server logs for details."
         ])
 

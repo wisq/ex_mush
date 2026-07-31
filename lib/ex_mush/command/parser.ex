@@ -19,10 +19,9 @@ defmodule ExMUSH.Command.Parser do
          {:ok, command} <- Command.Table.lookup(cmdname),
          args <- parse_args(command.parser, argstr),
          {:ok, switch_map} <- Command.switch_map(command, switch_strs) do
-      {:ok, %Action{command: command, switches: switch_map, args: args}}
+      %Action{command: command, switches: switch_map, args: args}
     else
-      {:error, _, _, _, _, _} -> {:error, :no_match}
-      {:error, _} = err -> err
+      _ -> %Action{command: Command.Unknown.command(), switches: %{}, args: [line]}
     end
   end
 
