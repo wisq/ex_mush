@@ -15,6 +15,27 @@ defmodule ExMUSH.ObjectID do
   def load(nil), do: new(-1)
   def load(id) when is_integer(id), do: new(id)
 
+  def parse("#" <> idstr) do
+    parsed =
+      idstr
+      |> String.split(":", parts: 2)
+      |> Enum.map(fn str ->
+        case Integer.parse(str) do
+          {int, ""} -> int
+          _ -> :error
+        end
+      end)
+
+    if :error in parsed do
+      :error
+    else
+      case parsed do
+        [id] -> {:ok, %OID{id: id}}
+        [id, ctime] -> {:ok, %OID{id: id, ctime: ctime}}
+      end
+    end
+  end
+
   defimpl Inspect do
     alias ExMUSH.ObjectID, as: OID
 

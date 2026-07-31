@@ -64,6 +64,7 @@ defmodule ExMUSH.World.Object do
   end
 
   defdelegate get(oid), to: ObjectDirectory
+  defdelegate fetch(oid), to: ObjectDirectory
 
   [:owner, :parent, :location, :link]
   |> Enum.each(fn key ->

@@ -1,17 +1,11 @@
 defmodule ExMUSH do
-  defguard is_object_id(oid) when is_struct(oid, ExMUSH.ObjectID)
+  alias ExMUSH.ObjectID
 
-  defmacro sigil_o({:<<>>, _, ["#" <> idstr]}, _modifiers) do
-    case String.split(idstr, ":") do
-      [id_str] ->
-        id = String.to_integer(id_str)
-        macro_struct(id, nil)
+  defguard is_object_id(oid) when is_struct(oid, ObjectID)
 
-      [id_str, ctime_str] ->
-        id = String.to_integer(id_str)
-        ctime = String.to_integer(ctime_str)
-        macro_struct(id, ctime)
-    end
+  defmacro sigil_o({:<<>>, _, [idstr]}, _modifiers) do
+    {:ok, oid} = ObjectID.parse(idstr)
+    macro_struct(oid.id, oid.ctime)
   end
 
   # Helper to inject the struct directly into the AST at compile time

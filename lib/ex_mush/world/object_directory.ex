@@ -23,17 +23,24 @@ defmodule ExMUSH.World.ObjectDirectory do
   def get_or_nil(~o'#-1'), do: nil
   def get_or_nil(oid), do: get(oid)
 
-  def get(%OID{id: id, ctime: nil} = oid) do
-    case :ets.lookup(@objects_ets, oid.id) do
-      [{^id, %World.Object{} = obj}] -> obj
-      [] -> raise "object #{oid} not found"
+  def fetch(%OID{id: id, ctime: nil}) do
+    case :ets.lookup(@objects_ets, id) do
+      [{^id, %World.Object{} = obj}] -> {:ok, obj}
+      [] -> :error
     end
   end
 
-  def get(%OID{id: id, ctime: ctime} = oid) when is_integer(ctime) do
-    case :ets.lookup(@objects_ets, oid.id) do
-      [{^id, %World.Object{ctime: ^ctime} = obj}] -> obj
-      _ -> raise "object #{oid} not found"
+  def fetch(%OID{id: id, ctime: ctime}) when is_integer(ctime) do
+    case :ets.lookup(@objects_ets, id) do
+      [{^id, %World.Object{ctime: ^ctime} = obj}] -> {:ok, obj}
+      _ -> :error
+    end
+  end
+
+  def get(oid) when is_object_id(oid) do
+    case fetch(oid) do
+      {:ok, %World.Object{} = obj} -> obj
+      :error -> raise "object #{oid} not found"
     end
   end
 

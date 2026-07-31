@@ -45,11 +45,10 @@ defmodule ExMUSH.World.Matching do
   def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: true}),
     do: ObjectDirectory.match_player(pname, :exact)
 
-  def locate(_, "#" <> idstr, %Opts{oid: true}) do
-    with {id, ""} <- Integer.parse(idstr) do
-      ObjectID.new(id)
-      |> ObjectDirectory.get()
-      |> handle_get()
+  def locate(_, "#" <> _ = idstr, %Opts{oid: true}) do
+    with {:ok, oid} <- ObjectID.parse(idstr),
+         {:ok, %Object{} = obj} <- Object.fetch(oid) do
+      {:ok, obj}
     else
       _ -> {:error, :no_match}
     end
