@@ -5,18 +5,32 @@ defmodule ExMUSH.Action do
   alias __MODULE__
   alias ExMUSH.Command
   alias ExMUSH.Context
+  alias ExMUSH.World.Object
 
   def execute(
         %Action{
           command: %Command{
+            name: cmd_name,
             execute: {mod, fun}
           },
           switches: switches,
           args: args
         },
-        %Context{} = ctx
+        %Context{executor: player} = ctx
       ) do
-    apply(mod, fun, [ctx, switches] ++ args)
+    try do
+      apply(mod, fun, [ctx, switches] ++ args)
+    rescue
+      exception ->
+        %type{} = exception
+
+        Object.tell(player, [
+          "Your #{inspect(cmd_name)} command failed with #{inspect(type)}.  ",
+          "Check server logs for details."
+        ])
+
+        raise exception
+    end
   end
 
   def child_spec(%Action{} = action, %Context{} = ctx) do
