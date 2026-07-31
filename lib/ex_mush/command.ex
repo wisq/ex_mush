@@ -49,11 +49,10 @@ defmodule ExMUSH.Command do
   @enforce_keys [:name, :aliases, :switches, :parser, :execute]
   defstruct(@enforce_keys)
 
+  @command_modules ExMUSH.Command.Indexer.find_modules()
+
   def all_commands do
-    [
-      ExMUSH.Command.Basic,
-      ExMUSH.Command.Look
-    ]
+    @command_modules
     |> Enum.flat_map(& &1.__commands__())
   end
 

@@ -1,4 +1,4 @@
-defmodule ExMUSH.Command.Look do
+defmodule ExMUSH.Commands.Look do
   use ExMUSH.Command
   alias ExMUSH.Context
   alias ExMUSH.World.Object

@@ -1,4 +1,4 @@
-defmodule ExMUSH.Command.Basic do
+defmodule ExMUSH.Commands.Teleport do
   use ExMUSH.Command
   alias ExMUSH.World.Object
 
