@@ -89,7 +89,7 @@ defmodule ExMUSH.World.Object do
 
   def tell(%Object{} = this, iodata) do
     if this.type == :player do
-      Network.SessionRegistry.broadcast(this.oid, iodata)
+      Network.SessionRegistry.notify(this.oid, iodata)
     end
   end
 

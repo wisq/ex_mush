@@ -17,7 +17,19 @@ defmodule ExMUSH.Network.SessionRegistry do
     end
   end
 
-  def broadcast(player_oid, iodata) when is_object_id(player_oid) do
+  def broadcast(iodata) do
+    try do
+      Registry.select(__MODULE__, [{{:"$1", :"$2", :_}, [], [:"$2"]}])
+    rescue
+      ArgumentError -> []
+    end
+    |> Enum.uniq()
+    |> Enum.each(fn pid ->
+      Session.output(pid, iodata)
+    end)
+  end
+
+  def notify(player_oid, iodata) when is_object_id(player_oid) do
     Registry.dispatch(__MODULE__, player_oid, fn matches ->
       matches
       |> Enum.each(fn {pid, _value} ->

@@ -119,6 +119,8 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   @impl true
   def init(_) do
+    ExMUSH.Network.SessionRegistry.broadcast("GAME: World has crashed, reloading ...")
+
     :ets.new(@objects_ets, [:set, :protected, :named_table])
     :ets.new(@players_ets, [:ordered_set, :protected, :named_table])
     :ets.new(@contents_ets, [:bag, :protected, :named_table])
@@ -127,6 +129,10 @@ defmodule ExMUSH.World.ObjectDirectory do
     index_objects(objs)
     index_players(objs)
     index_contents(objs)
+
+    ExMUSH.Network.SessionRegistry.broadcast(
+      "GAME: World reloaded from database.  Check recent changes and redo if needed."
+    )
 
     {:ok, nil}
   end
