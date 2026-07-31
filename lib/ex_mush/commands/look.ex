@@ -26,6 +26,7 @@ defmodule ExMUSH.Commands.Look do
       look_inventory(this, player, inventory),
       look_exits(this, player, exits)
     ]
+    |> Enum.reject(&is_nil/1)
     |> Enum.intersperse("\n")
     |> then(&Object.tell(player, &1))
   end
@@ -37,7 +38,7 @@ defmodule ExMUSH.Commands.Look do
     end
   end
 
-  defp look_inventory(_, _, []), do: []
+  defp look_inventory(_, _, []), do: nil
 
   defp look_inventory(%Object{type: type}, player, inventory) do
     [
@@ -54,7 +55,7 @@ defmodule ExMUSH.Commands.Look do
     ]
   end
 
-  defp look_exits(_, _, []), do: []
+  defp look_exits(_, _, []), do: nil
 
   defp look_exits(_, _, exits) do
     [
