@@ -41,6 +41,8 @@ defmodule ExMUSH.Commands.Look do
   defp look_inventory(_, _, []), do: nil
 
   defp look_inventory(%Object{type: type}, player, inventory) do
+    player_oid = player.oid
+
     [
       case type do
         :player -> "Carrying:"
@@ -50,6 +52,10 @@ defmodule ExMUSH.Commands.Look do
       "\n",
       inventory
       |> List.delete(player)
+      |> Enum.reject(fn
+        %Object{oid: ^player_oid} -> true
+        %Object{flags: flags} -> :dark in flags && :light not in flags
+      end)
       |> Enum.map(&Object.full_name(&1, player))
       |> Enum.intersperse("\n")
     ]
@@ -62,6 +68,7 @@ defmodule ExMUSH.Commands.Look do
       "Obvious exits:",
       "\n",
       exits
+      |> Enum.reject(fn %Object{flags: flags} -> :dark in flags && :light not in flags end)
       |> Enum.map(& &1.name)
       |> comma_list()
     ]
