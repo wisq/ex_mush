@@ -3,7 +3,8 @@ defmodule ExMUSH.World.Object.Flag do
   defstruct(
     key: nil,
     name: nil,
-    letter: nil
+    letter: nil,
+    persisted: true
   )
 end
 
@@ -22,14 +23,24 @@ defmodule ExMUSH.World.Object.Flags do
   @flags [
     %Flag{key: :wizard, name: "WIZARD", letter: ?W},
     %Flag{key: :royalty, name: "ROYALTY", letter: ?r},
+    %Flag{key: :connected, name: "CONNECTED", letter: ?c, persisted: false},
+    %Flag{key: :no_command, name: "NO_COMMAND", letter: ?n},
     %Flag{key: :myopic, name: "MYOPIC", letter: ?m},
     %Flag{key: :dark, name: "DARK", letter: ?D},
     %Flag{key: :light, name: "LIGHT", letter: ?l}
   ]
-  @flags_by_name Map.new(@flags, fn %Flag{name: n} = f -> {n, f} end)
 
-  def flags_by_name, do: @flags_by_name
-  def flag_keys, do: @flags |> Enum.map(& &1.key)
+  def db_flag_keys do
+    @flags
+    |> Enum.filter(& &1.persisted)
+    |> Enum.map(& &1.key)
+  end
+
+  def db_flags_by_name do
+    @flags
+    |> Enum.filter(& &1.persisted)
+    |> Map.new(&{&1.name, &1})
+  end
 
   def letters(%Object{} = this) do
     type_letter = Map.fetch!(@type_flags, this.type)

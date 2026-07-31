@@ -358,7 +358,7 @@ defmodule ExMUSH.Import.Parse do
     end)
   end
 
-  @obj_flags ExMUSH.World.Object.Flags.flags_by_name()
+  @obj_flags ExMUSH.World.Object.Flags.db_flags_by_name()
   @attr_flags %{}
 
   def object_flags(fstr), do: parse_flags(fstr, @obj_flags)

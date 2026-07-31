@@ -40,22 +40,16 @@ defmodule ExMUSH.Commands.Look do
 
   defp look_inventory(_, _, []), do: nil
 
-  defp look_inventory(%Object{type: type}, player, inventory) do
-    player_oid = player.oid
-
+  defp look_inventory(this, player, inventory) do
     [
-      case type do
+      case this.type do
         :player -> "Carrying:"
         :thing -> "Carrying:"
         _ -> "Contents:"
       end,
       "\n",
       inventory
-      |> List.delete(player)
-      |> Enum.reject(fn
-        %Object{oid: ^player_oid} -> true
-        %Object{flags: flags} -> :dark in flags && :light not in flags
-      end)
+      |> Enum.filter(&visible?(&1, this, player))
       |> Enum.map(&Object.full_name(&1, player))
       |> Enum.intersperse("\n")
     ]
@@ -63,12 +57,12 @@ defmodule ExMUSH.Commands.Look do
 
   defp look_exits(_, _, []), do: nil
 
-  defp look_exits(_, _, exits) do
+  defp look_exits(this, player, exits) do
     [
       "Obvious exits:",
       "\n",
       exits
-      |> Enum.reject(fn %Object{flags: flags} -> :dark in flags && :light not in flags end)
+      |> Enum.filter(&visible?(&1, this, player))
       |> Enum.map(& &1.name)
       |> comma_list()
     ]
@@ -80,4 +74,21 @@ defmodule ExMUSH.Commands.Look do
 
   defp oxford_comma([a, b]), do: a <> ", and " <> b
   defp oxford_comma([head | rest]), do: head <> ", " <> oxford_comma(rest)
+
+  # Players don't see themselves in lists.
+  defp visible?(%Object{oid: p_oid}, _, %Object{oid: p_oid}), do: false
+
+  defp visible?(%Object{type: item_type, flags: item_flags}, %Object{flags: my_flags}, _) do
+    cond do
+      # Disconnected players are always invisible.
+      item_type == :player && :connected not in item_flags -> false
+      # Light objects are always visible.
+      :light in item_flags -> true
+      # Dark items, or items in dark rooms, are invisible.
+      :dark in item_flags -> false
+      :dark in my_flags -> false
+      # Everything else is visible.
+      true -> true
+    end
+  end
 end

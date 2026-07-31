@@ -3,7 +3,7 @@ defmodule ExMUSH.World.ObjectDirectory do
   import ExMUSH
   alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.DB
-  alias ExMUSH.World
+  alias ExMUSH.World.Object
 
   @objects_ets __MODULE__.ETS.Objects
   @contents_ets __MODULE__.ETS.Contents
@@ -25,21 +25,30 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   def fetch(%OID{id: id, ctime: nil}) do
     case :ets.lookup(@objects_ets, id) do
-      [{^id, %World.Object{} = obj}] -> {:ok, obj}
+      [{^id, %Object{} = obj}] -> {:ok, add_derived_flags(obj)}
       [] -> :error
     end
   end
 
   def fetch(%OID{id: id, ctime: ctime}) when is_integer(ctime) do
     case :ets.lookup(@objects_ets, id) do
-      [{^id, %World.Object{ctime: ^ctime} = obj}] -> {:ok, obj}
+      [{^id, %Object{ctime: ^ctime} = obj}] -> {:ok, add_derived_flags(obj)}
       _ -> :error
     end
   end
 
+  defp add_derived_flags(%Object{type: :player} = player) do
+    case ExMUSH.Network.SessionRegistry.connected?(player.oid) do
+      true -> %Object{player | flags: [:connected, player.flags]}
+      false -> player
+    end
+  end
+
+  defp add_derived_flags(%Object{} = obj), do: obj
+
   def get(oid) when is_object_id(oid) do
     case fetch(oid) do
-      {:ok, %World.Object{} = obj} -> obj
+      {:ok, %Object{} = obj} -> obj
       :error -> raise "object #{oid} not found"
     end
   end
@@ -116,7 +125,7 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp load_objects do
     DB.Repo.get_objects_for_directory()
-    |> Enum.map(&World.Object.load/1)
+    |> Enum.map(&Object.load/1)
   end
 
   defp index_objects(objs) do

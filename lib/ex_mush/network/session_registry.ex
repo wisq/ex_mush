@@ -10,10 +10,19 @@ defmodule ExMUSH.Network.SessionRegistry do
     Registry.register(__MODULE__, player_oid, conn_info)
   end
 
+  def connected?(player_oid) do
+    case Registry.lookup(__MODULE__, player_oid) do
+      [] -> false
+      [_ | _] -> true
+    end
+  end
+
   def broadcast(player_oid, iodata) when is_object_id(player_oid) do
-    Registry.lookup(__MODULE__, player_oid)
-    |> Enum.each(fn {pid, _value} ->
-      Session.output(pid, iodata)
+    Registry.dispatch(__MODULE__, player_oid, fn matches ->
+      matches
+      |> Enum.each(fn {pid, _value} ->
+        Session.output(pid, iodata)
+      end)
     end)
   end
 end
