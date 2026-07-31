@@ -19,6 +19,8 @@ defmodule ExMUSH.Commands.Look do
 
   defp do_look(player, this) do
     {inventory, exits} = Object.inventory_and_exits(this)
+    inventory = inventory |> Enum.filter(&visible?(&1, this, player))
+    exits = exits |> Enum.filter(&visible?(&1, this, player))
 
     [
       Object.full_name(this, player),
@@ -49,7 +51,6 @@ defmodule ExMUSH.Commands.Look do
       end,
       "\n",
       inventory
-      |> Enum.filter(&visible?(&1, this, player))
       |> Enum.map(&Object.full_name(&1, player))
       |> Enum.intersperse("\n")
     ]
@@ -57,12 +58,11 @@ defmodule ExMUSH.Commands.Look do
 
   defp look_exits(_, _, []), do: nil
 
-  defp look_exits(this, player, exits) do
+  defp look_exits(_this, _player, exits) do
     [
       "Obvious exits:",
       "\n",
       exits
-      |> Enum.filter(&visible?(&1, this, player))
       |> Enum.map(& &1.name)
       |> comma_list()
     ]
