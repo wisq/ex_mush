@@ -9,43 +9,37 @@ defmodule ExMUSH.Commands.Look do
   @switches ["outside"]
   @parser :one_arg
 
-  defcommand look(%Context{executor: this}, _switches, target \\ "here") do
-    case Matching.locate(this, target, %Matching.Opts{location: false}) do
-      {:ok, oid} -> do_look(this, oid)
-      {:error, :no_match} -> Object.tell(this, "I don't see that here.")
-      {:error, :ambiguous_match} -> Object.tell(this, "I'm not sure which one you mean.")
+  defcommand look(%Context{executor: player_oid}, _switches, target_name \\ "here") do
+    case Matching.locate(player_oid, target_name, %Matching.Opts{location: false}) do
+      {:ok, target} -> Object.get(player_oid) |> do_look(target)
+      {:error, :no_match} -> Object.tell(player_oid, "I don't see that here.")
+      {:error, :ambiguous_match} -> Object.tell(player_oid, "I'm not sure which one you mean.")
     end
   end
 
-  defp do_look(this, target) do
-    {inventory, exits} = Object.inventory_and_exits(target)
+  defp do_look(player, this) do
+    {inventory, exits} = Object.inventory_and_exits(this)
 
     [
-      name_and_id(target),
-      look_description(target),
-      look_inventory(target, inventory),
-      look_exits(target, exits)
+      Object.full_name(this, player),
+      look_description(this),
+      look_inventory(this, player, inventory),
+      look_exits(this, player, exits)
     ]
     |> Enum.intersperse("\n")
-    |> then(&Object.tell(this, &1))
+    |> then(&Object.tell(player, &1))
   end
 
-  # FIXME:
-  #  - add flags
-  #  - determine if ID/flags should be shown based on control / MYOPIC flag
-  #  - (eventually) ANSI
-  defp name_and_id(target), do: "#{target.name}(#{target.oid})"
-
-  defp look_description(target) do
-    case Object.attribute(target, "DESCRIBE") do
+  defp look_description(this) do
+    case Object.attribute(this, "DESCRIBE") do
       %Object.Attribute{value: v} -> v
       nil -> "You see nothing special."
     end
   end
 
-  defp look_inventory(_, []), do: []
+  defp look_inventory(_, _, []), do: []
 
-  defp look_inventory(%Object{type: type}, inventory) do
+  defp look_inventory(%Object{type: type}, player, inventory) do
     [
       case type do
         :player -> "Carrying:"
@@ -54,14 +48,15 @@ defmodule ExMUSH.Commands.Look do
       end,
       "\n",
       inventory
-      |> Enum.map(&name_and_id/1)
+      |> List.delete(player)
+      |> Enum.map(&Object.full_name(&1, player))
       |> Enum.intersperse("\n")
     ]
   end
 
-  defp look_exits(_, []), do: []
+  defp look_exits(_, _, []), do: []
 
-  defp look_exits(_, exits) do
+  defp look_exits(_, _, exits) do
     [
       "Obvious exits:",
       "\n",

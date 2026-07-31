@@ -1,6 +1,9 @@
 defmodule ExMUSH.World.Object do
   import ExMUSH
+
   alias __MODULE__
+  alias __MODULE__.Flags
+
   alias ExMUSH.DB
   alias ExMUSH.World.{ObjectDirectory, ObjectServer}
   alias ExMUSH.ObjectID, as: OID
@@ -81,9 +84,23 @@ defmodule ExMUSH.World.Object do
   def attribute(oid, attr) when is_object_id(oid), do: ObjectServer.attribute(oid, attr)
   def attribute(%Object{oid: oid}, attr), do: ObjectServer.attribute(oid, attr)
 
-  def tell(oid, iodata) do
-    if get(oid).type == :player do
-      Network.SessionRegistry.broadcast(oid, iodata)
+  def tell(oid, iodata) when is_object_id(oid), do: get(oid) |> tell(iodata)
+
+  def tell(%Object{} = this, iodata) do
+    if this.type == :player do
+      Network.SessionRegistry.broadcast(this.oid, iodata)
     end
+  end
+
+  def full_name(%Object{} = this, %Object{} = player) do
+    if :myopic not in player.flags and controls?(player, this) do
+      [this.name, "(", to_string(this.oid), Flags.letters(this), ")"]
+    else
+      this.name
+    end
+  end
+
+  def controls?(%Object{} = player, %Object{} = object) do
+    object.owner_oid == player.oid || :wizard in player.flags
   end
 end

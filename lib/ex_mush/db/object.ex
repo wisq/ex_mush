@@ -8,7 +8,7 @@ defmodule ExMUSH.DB.Object do
 
     field(:name, :string)
     field(:type, Ecto.Enum, values: [:room, :thing, :exit, :player, :garbage])
-    field(:flags, {:array, Ecto.Enum}, values: [])
+    field(:flags, {:array, Ecto.Enum}, values: ExMUSH.World.Object.Flags.flag_keys())
 
     belongs_to(:owner, Object)
     belongs_to(:parent, Object)
