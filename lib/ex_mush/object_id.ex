@@ -34,26 +34,26 @@ defmodule ExMUSH.ObjectID do
     else
       case parsed do
         [id] -> {:ok, %OID{id: id}}
+        [id, _] when id < 0 -> :error
         [id, ctime] -> {:ok, %OID{id: id, ctime: ctime}}
       end
     end
   end
 
+  def parse(str) when is_binary(str), do: :error
+
   defimpl Inspect do
     alias ExMUSH.ObjectID, as: OID
 
-    def inspect(%OID{id: id, ctime: nil}, opts) do
-      {"~o'##{id}'", opts}
-    end
-
-    def inspect(%OID{id: id, ctime: ctime}, opts) do
-      {"~o'##{id}:#{ctime}'", opts}
-    end
+    def inspect(%OID{id: id}, opts) when id < 0, do: {"~o'##{id}'", opts}
+    def inspect(%OID{id: id, ctime: nil}, opts), do: {"~o'##{id}'", opts}
+    def inspect(%OID{id: id, ctime: ctime}, opts), do: {"~o'##{id}:#{ctime}'", opts}
   end
 
   defimpl String.Chars do
     alias ExMUSH.ObjectID, as: OID
 
+    def to_string(%OID{id: id}) when id < 0, do: "##{id}"
     def to_string(%OID{id: id, ctime: nil}), do: "##{id}"
     def to_string(%OID{id: id, ctime: ctime}), do: "##{id}:#{ctime}"
   end

@@ -7,7 +7,8 @@ defmodule ExMUSH.MixProject do
       version: "0.1.0",
       elixir: "~> 1.20",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -16,6 +17,12 @@ defmodule ExMUSH.MixProject do
     [
       extra_applications: [:logger],
       mod: {ExMUSH.Application, []}
+    ]
+  end
+
+  defp aliases do
+    [
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
 
