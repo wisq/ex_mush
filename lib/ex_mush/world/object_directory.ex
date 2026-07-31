@@ -33,7 +33,7 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   def fetch(%OID{id: id, ctime: ctime}) when is_integer(ctime) do
     case :ets.lookup(@objects_ets, id) do
-      [{^id, %Object{ctime: ^ctime} = obj}] -> {:ok, add_derived_flags(obj)}
+      [{^id, %Object{ctime: {^ctime, _datetime}} = obj}] -> {:ok, add_derived_flags(obj)}
       _ -> :error
     end
   end
@@ -163,13 +163,19 @@ defmodule ExMUSH.World.ObjectDirectory do
       if new.oid != old.oid || new.aliases != old.aliases do
         {:error, :illegal_modification}
       else
-        new = %Object{new | mtime: DateTime.utc_now() |> DateTime.to_unix()}
+        new = %Object{new | mtime: now()}
         :ets.insert(@objects_ets, [{new.oid.id, new}])
         {:ok, new}
       end
     rescue
       e in KeyError -> {:error, Exception.message(e)}
     end
+  end
+
+  defp now do
+    datetime = DateTime.utc_now()
+    unix = datetime |> DateTime.to_unix()
+    {unix, datetime}
   end
 
   defp load_objects do

@@ -43,8 +43,9 @@ defmodule ExMUSH.World.Object do
     times =
       @time_keys
       |> Enum.map(fn {my_key, db_key} ->
-        time = Map.fetch!(obj, db_key) |> DateTime.to_unix()
-        {my_key, time}
+        datetime = Map.fetch!(obj, db_key)
+        unix = datetime |> DateTime.to_unix()
+        {my_key, {unix, datetime}}
       end)
 
     oids =
