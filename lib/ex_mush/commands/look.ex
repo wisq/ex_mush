@@ -6,7 +6,7 @@ defmodule ExMUSH.Commands.Look do
 
   @command "look"
   @aliases ["l"]
-  @switches ["outside"]
+  # TODO: @switches ["outside"]
   @parser :one_arg
 
   defcommand look(%Context{player: player}, _switches, target_name \\ "here") do

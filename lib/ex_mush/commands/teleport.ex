@@ -6,7 +6,7 @@ defmodule ExMUSH.Commands.Teleport do
   alias ExMUSH.World.Matching
 
   @command "@teleport"
-  @switches ~w"list inside silent"
+  # TODO: @switches ~w"list inside silent"
   @parser :two_args
 
   defcommand teleport(%Context{player: player}, _switches) do
