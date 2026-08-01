@@ -67,7 +67,7 @@ defmodule ExMUSH.World.ObjectDirectory do
     ensure_exists(oid)
 
     :ets.lookup(@contents_ets, id)
-    |> Enum.map(fn {_, c_id} -> c_id end)
+    |> Enum.map(fn {_, c_id} -> %OID{id: c_id} end)
   end
 
   def contents(oid) when is_object_id(oid), do: content_oids(oid) |> Enum.map(&get/1)
@@ -111,7 +111,7 @@ defmodule ExMUSH.World.ObjectDirectory do
     end
   end
 
-  def move(oid, from \\ :anywhere, to)
+  def move(oid, from, to)
       when is_object_id(oid) and
              (is_object_id(from) or from == :anywhere) and
              is_object_id(to) do
@@ -139,22 +139,27 @@ defmodule ExMUSH.World.ObjectDirectory do
   end
 
   @impl true
-  def handle_call({:move, oid, from, to}, _, state)
-      when is_object_id(oid) and
-             (is_object_id(from) or from == :anywhere) and
-             is_object_id(to) do
+  def handle_call({:move, %OID{} = oid, from, %OID{} = to_oid}, _, state)
+      when is_object_id(from) or from == :anywhere do
     with {:ok, %Object{} = object} <- fetch(oid) do
       cond do
         object.type == :room -> {:error, :cannot_move_room}
-        object.location_oid == to -> {:ok, object}
+        object.location_oid == to_oid -> {:ok, object}
         from != :anywhere && object.location_oid != from -> {:error, :object_moved}
-        true -> do_update(object, location_oid: to)
+        true -> do_move(object, to_oid)
       end
     end
     |> then(fn
       {:ok, _} = rval -> {:reply, rval, state}
       {:error, _} = rval -> {:reply, rval, state}
     end)
+  end
+
+  defp do_move(%Object{} = object, %OID{} = to_oid) do
+    :ok = contents_remove(object.location_oid, object.oid)
+    {:ok, object} = do_update(object, location_oid: to_oid)
+    :ok = contents_add(to_oid, object.oid)
+    {:ok, object}
   end
 
   defp do_update(%Object{} = old, attrs) when is_list(attrs) do
@@ -178,6 +183,20 @@ defmodule ExMUSH.World.ObjectDirectory do
     datetime = DateTime.utc_now()
     unix = datetime |> DateTime.to_unix()
     {unix, datetime}
+  end
+
+  defp contents_add(loc_id, obj_id) do
+    :ets.insert(@contents_ets, [{loc_id.id, obj_id.id}])
+    |> IO.inspect(label: "insert")
+
+    :ok
+  end
+
+  defp contents_remove(loc_id, obj_id) do
+    :ets.delete_object(@contents_ets, {loc_id.id, obj_id.id})
+    |> IO.inspect(label: "delete_object")
+
+    :ok
   end
 
   defp load_objects do
@@ -204,7 +223,7 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp index_contents(objs) do
     objs
-    |> Enum.map(fn obj -> {obj.location_oid.id, obj.oid} end)
+    |> Enum.map(fn obj -> {obj.location_oid.id, obj.oid.id} end)
     |> Enum.reject(fn {loc_id, _} -> loc_id < 0 end)
     |> then(&:ets.insert(@contents_ets, &1))
   end

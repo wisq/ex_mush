@@ -1,22 +1,26 @@
 defmodule ExMUSH.Commands.Teleport do
   use ExMUSH.Command
+  alias ExMUSH.Context
   alias ExMUSH.World.Object
+  alias ExMUSH.World.Matching
 
   @command "@teleport"
   @switches ~w"list inside silent"
   @parser :two_args
 
-  defcommand teleport(state, switches) do
-    Object.tell(
-      state.player,
-      inspect({state, switches}, label: "@teleport without args", pretty: true)
-    )
+  defcommand teleport(%Context{player: player}, _switches) do
+    Object.tell(player, "Teleport where?")
   end
 
-  defcommand teleport(state, switches, object \\ "me", destination) do
-    Object.tell(
-      state.player,
-      inspect({state, switches, object, destination}, label: "@teleport", pretty: true)
-    )
+  defcommand teleport(%Context{player: player}, _switches, whatstr \\ "me", wherestr) do
+    with {:ok, what} <- Matching.locate(player, whatstr),
+         {:ok, where} <- Matching.locate(player, wherestr),
+         {:ok, _} <- Object.move(what, where) do
+      # TODO
+      # - teleport to exits
+      # - teleport home
+      # - permission checks
+      Object.tell(player, "Teleported.")
+    end
   end
 end

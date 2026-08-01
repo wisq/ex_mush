@@ -136,4 +136,17 @@ defmodule ExMUSH.World.Object do
   def controls?(%Object{} = player, %Object{} = object) do
     object.owner_oid == player.oid || :wizard in player.flags
   end
+
+  defguardp is_object_or_oid(oo) when is_object_id(oo) or is_struct(oo, Object)
+  defp to_object_id(%Object{oid: oid}), do: oid
+  defp to_object_id(oid) when is_object_id(oid), do: oid
+
+  def move(what, from \\ :anywhere, to)
+
+  def move(what, :anywhere, to) when is_object_or_oid(what) and is_object_or_oid(to),
+    do: ObjectDirectory.move(to_object_id(what), :anywhere, to_object_id(to))
+
+  def move(what, from, to)
+      when is_object_or_oid(what) and is_object_or_oid(from) and is_object_or_oid(to),
+      do: ObjectDirectory.move(to_object_id(what), to_object_id(from), to_object_id(to))
 end
