@@ -95,7 +95,12 @@ defmodule ExMUSH.World.ObjectDirectory do
       when is_object_id(oid) and
              (is_object_id(from) or from == :anywhere) and
              is_object_id(to) do
-    GenServer.call(__MODULE__, {:move, oid, from, to})
+    with {:ok, object} <- GenServer.call(__MODULE__, {:move, oid, from, to}) do
+      ExMUSH.Command.Parser.parse("look")
+      |> ExMUSH.Action.Supervisor.run(ExMUSH.Context.for_player(object))
+
+      {:ok, object}
+    end
   end
 
   @impl true

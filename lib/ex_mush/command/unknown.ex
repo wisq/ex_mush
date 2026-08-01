@@ -1,7 +1,6 @@
 defmodule ExMUSH.Command.Unknown do
   alias ExMUSH.Context
   alias ExMUSH.Command
-  alias ExMUSH.Action
   alias ExMUSH.World.Object
   alias ExMUSH.World.Matching
   alias ExMUSH.World.Matching.Opts, as: MOpts
@@ -25,14 +24,12 @@ defmodule ExMUSH.Command.Unknown do
   end
 
   defp traverse_exit(
-         %Context{} = ctx,
+         %Context{},
          %Object{oid: player_oid},
          %Object{location_oid: from, link_oid: to}
        ) do
-    with {:ok, player} <- ExMUSH.World.ObjectDirectory.move(player_oid, from, to) do
-      ctx = Context.update(ctx, player)
-      Command.Parser.parse("look") |> Action.execute(ctx)
-    else
+    case ExMUSH.World.ObjectDirectory.move(player_oid, from, to) do
+      {:ok, _} -> :ok
       {:error, _} -> Object.tell(player_oid, "You can't go that way.")
     end
   end
