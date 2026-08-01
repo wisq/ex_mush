@@ -1,5 +1,5 @@
 defmodule ExMUSH.World.Matching do
-  alias ExMUSH.ObjectID
+  alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.World.Object
   alias ExMUSH.World.ObjectDirectory
 
@@ -48,17 +48,20 @@ defmodule ExMUSH.World.Matching do
 
   def locate(%Object{} = origin, "me", %Opts{me: true}), do: {:ok, origin}
 
-  def locate(%Object{} = origin, "here", %Opts{here: true}),
-    do: Object.location(origin) |> handle_get()
+  def locate(%Object{} = origin, "here", %Opts{here: true}) do
+    origin.location_oid
+    |> Object.get_or_nil()
+    |> handle_get()
+  end
 
   def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: false}),
-    do: ObjectDirectory.match_player(pname, :partial)
+    do: ObjectDirectory.match_player_oid(pname, :partial) |> handle_match()
 
   def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: true}),
-    do: ObjectDirectory.match_player(pname, :exact)
+    do: ObjectDirectory.match_player_oid(pname, :exact) |> handle_match()
 
   def locate(_, "#" <> _ = idstr, %Opts{oid: true}) do
-    with {:ok, oid} <- ObjectID.parse(idstr),
+    with {:ok, oid} <- OID.parse(idstr),
          {:ok, %Object{} = obj} <- Object.fetch(oid) do
       {:ok, obj}
     else
@@ -67,8 +70,8 @@ defmodule ExMUSH.World.Matching do
   end
 
   def locate(origin, text, %Opts{always_players: true} = opts) do
-    case ObjectDirectory.match_player(text, :exact) do
-      {:ok, oid} -> {:ok, oid}
+    case ObjectDirectory.match_player_oid(text, :exact) do
+      {:ok, %OID{} = oid} -> {:ok, Object.get(oid)}
       {:error, :no_match} -> locate(origin, text, %Opts{opts | always_players: false})
     end
   end
@@ -79,7 +82,7 @@ defmodule ExMUSH.World.Matching do
 
     [
       case opts.location do
-        true -> [ObjectDirectory.get_or_nil(origin.location_oid)]
+        true -> [Object.get_or_nil(origin.location_oid)]
         false -> []
       end,
       case opts.inventory do
@@ -175,4 +178,7 @@ defmodule ExMUSH.World.Matching do
 
   defp handle_get(%Object{} = obj), do: {:ok, obj}
   defp handle_get(nil), do: {:error, :no_match}
+
+  defp handle_match({:ok, %OID{} = oid}), do: {:ok, Object.get(oid)}
+  defp handle_match({:error, _} = err), do: err
 end

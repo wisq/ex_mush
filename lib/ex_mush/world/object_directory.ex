@@ -15,16 +15,6 @@ defmodule ExMUSH.World.ObjectDirectory do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  [:owner, :parent, :location, :link]
-  |> Enum.each(fn key ->
-    def unquote(key)(obj_or_oid), do: unquote(:"#{key}_oid")(obj_or_oid) |> get_or_nil()
-    def unquote(:"#{key}_oid")(oid) when is_object_id(oid), do: get(oid).unquote(:"#{key}_oid")
-    def unquote(:"#{key}_oid")(%Object{} = obj), do: obj.unquote(:"#{key}_oid")
-  end)
-
-  def get_or_nil(~o'#-1'), do: nil
-  def get_or_nil(oid), do: get(oid)
-
   def fetch(%OID{id: id, ctime: nil}) do
     case :ets.lookup(@objects_ets, id) do
       [{^id, %Object{} = obj}] -> {:ok, add_derived_flags(obj)}
@@ -48,16 +38,15 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp add_derived_flags(%Object{} = obj), do: obj
 
-  def get(oid) when is_object_id(oid) do
-    case fetch(oid) do
-      {:ok, %Object{} = obj} -> obj
-      :error -> raise "object #{oid} not found"
-    end
-  end
-
   # Without a ctime, we can use the faster `:ets.member/2` call.
   def exists?(%OID{id: id, ctime: nil}), do: :ets.member(@objects_ets, id)
-  def exists?(%OID{ctime: ctime} = oid), do: get(oid).ctime == ctime
+
+  def exists?(%OID{ctime: ctime} = oid) when is_integer(ctime) do
+    case fetch(oid) do
+      {:ok, _} -> true
+      :error -> false
+    end
+  end
 
   def ensure_exists(oid) when is_object_id(oid) do
     unless exists?(oid), do: raise("object #{oid} not found")
@@ -68,15 +57,6 @@ defmodule ExMUSH.World.ObjectDirectory do
 
     :ets.lookup(@contents_ets, id)
     |> Enum.map(fn {_, c_id} -> %OID{id: c_id} end)
-  end
-
-  def contents(oid) when is_object_id(oid), do: content_oids(oid) |> Enum.map(&get/1)
-
-  def match_player(name, mode \\ :partial) when mode in [:partial, :exact] do
-    case match_player_oid(name, mode) do
-      {:ok, oid} -> {:ok, get(oid)}
-      {:error, _} = err -> err
-    end
   end
 
   def match_player_oid(name, mode \\ :partial) when mode in [:partial, :exact] do

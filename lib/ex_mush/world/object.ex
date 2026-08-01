@@ -33,6 +33,10 @@ defmodule ExMUSH.World.Object do
                 |> Enum.reduce(&Kernel.++/2)
   defstruct(@enforce_keys)
 
+  defguardp is_object_or_oid(oo) when is_object_id(oo) or is_struct(oo, Object)
+  defp to_object_id(%Object{oid: oid}), do: oid
+  defp to_object_id(oid) when is_object_id(oid), do: oid
+
   def from_db(%DB.Object{} = obj) do
     base =
       Map.take(obj, @base_keys)
@@ -95,29 +99,34 @@ defmodule ExMUSH.World.Object do
     base ++ flags ++ times ++ oids
   end
 
-  defdelegate get(oid), to: ObjectDirectory
   defdelegate fetch(oid), to: ObjectDirectory
 
-  [:owner, :parent, :location, :link]
-  |> Enum.each(fn key ->
-    defdelegate unquote(key)(oid), to: ObjectDirectory
-    defdelegate unquote(:"#{key}_oid")(oid), to: ObjectDirectory
-  end)
+  def get(%OID{} = oid) do
+    case fetch(oid) do
+      {:ok, %Object{} = obj} -> obj
+      :error -> raise "object #{oid} not found"
+    end
+  end
 
-  defdelegate content_oids(oid), to: ObjectDirectory
-  defdelegate contents(oid), to: ObjectDirectory
+  def get_or_nil(~o'#-1'), do: nil
+  def get_or_nil(%OID{} = oid), do: get(oid)
 
-  def inventory_and_exits(%Object{oid: oid}), do: inventory_and_exits(oid)
+  def contents(%Object{oid: oid}), do: contents(oid)
 
-  def inventory_and_exits(oid) when is_object_id(oid) do
-    ObjectDirectory.contents(oid)
+  def contents(%OID{} = oid) do
+    ObjectDirectory.content_oids(oid)
+    |> Enum.map(&get/1)
+  end
+
+  def inventory_and_exits(obj) when is_object_or_oid(obj) do
+    contents(obj)
     |> Enum.split_with(&(&1.type != :exit))
   end
 
-  def attribute(oid, attr) when is_object_id(oid), do: ObjectServer.attribute(oid, attr)
+  def attribute(%OID{} = oid, attr), do: ObjectServer.attribute(oid, attr)
   def attribute(%Object{oid: oid}, attr), do: ObjectServer.attribute(oid, attr)
 
-  def tell(oid, iodata) when is_object_id(oid), do: get(oid) |> tell(iodata)
+  def tell(%OID{} = oid, iodata), do: get(oid) |> tell(iodata)
 
   def tell(%Object{} = this, iodata) do
     if this.type == :player do
@@ -136,10 +145,6 @@ defmodule ExMUSH.World.Object do
   def controls?(%Object{} = player, %Object{} = object) do
     object.owner_oid == player.oid || :wizard in player.flags
   end
-
-  defguardp is_object_or_oid(oo) when is_object_id(oo) or is_struct(oo, Object)
-  defp to_object_id(%Object{oid: oid}), do: oid
-  defp to_object_id(oid) when is_object_id(oid), do: oid
 
   def move(what, from \\ :anywhere, to)
 

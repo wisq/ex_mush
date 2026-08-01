@@ -2,7 +2,6 @@ defmodule ExMUSH.World.ObjectDirectory.Writer do
   use GenServer
   import ExMUSH
   alias ExMUSH.World.Object
-  alias ExMUSH.World.ObjectDirectory
   alias ExMUSH.DB
 
   # Queue a flush in one second after receiving a change.
@@ -39,7 +38,7 @@ defmodule ExMUSH.World.ObjectDirectory.Writer do
   @impl true
   def handle_info(:flush, %State{to_flush: to_flush}) do
     to_flush
-    |> Enum.map(&ObjectDirectory.get/1)
+    |> Enum.map(&Object.get/1)
     |> Enum.map(&Object.to_db/1)
     |> then(fn records ->
       DB.Repo.insert_all(DB.Object, records,
