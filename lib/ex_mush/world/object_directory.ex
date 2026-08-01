@@ -193,9 +193,8 @@ defmodule ExMUSH.World.ObjectDirectory do
     objs
     |> Enum.filter(fn obj -> obj.type == :player end)
     |> Enum.flat_map(fn obj ->
-      [obj.name | obj.aliases]
-      |> Enum.uniq()
-      |> Enum.map(fn n -> {String.downcase(n), obj.oid} end)
+      obj.aliases
+      |> Enum.map(fn n -> {n, obj.oid} end)
     end)
     |> then(&:ets.insert(@players_ets, &1))
   end

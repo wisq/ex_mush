@@ -163,14 +163,10 @@ defmodule ExMUSH.World.Matching do
   defp maybe_get_nearby(_, %Opts{nearby_objects: false, nearby_exits: false}), do: {[], []}
   defp maybe_get_nearby(location_oid, %Opts{}), do: Object.inventory_and_exits(location_oid)
 
-  defp all_names(%Object{type: type, name: name, aliases: aliases}, _)
-       when type in [:player, :exit], do: [name | aliases] |> Enum.map(&String.downcase/1)
-
-  defp all_names(%Object{type: :thing, name: name}, :fuzzy) do
-    dcname = String.downcase(name)
-    [dcname | String.split(dcname)]
-  end
-
+  defp all_names(%Object{type: :player, aliases: aliases}, _), do: aliases
+  defp all_names(%Object{type: :exit, aliases: aliases}, _), do: aliases
+  defp all_names(%Object{type: :thing, aliases: aliases}, :fuzzy), do: aliases
+  defp all_names(%Object{type: :room, aliases: aliases}, :fuzzy), do: aliases
   defp all_names(%Object{name: name}, _), do: [String.downcase(name)]
 
   defp maybe_ambiguous([head | _], %Opts{allow_ambiguous: true}), do: {:ok, head}

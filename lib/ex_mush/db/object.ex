@@ -35,12 +35,10 @@ defmodule ExMUSH.DB.Object do
       link_oid: OID.from_db(object.link_id),
       aliases:
         case object.attributes do
-          [%DB.Object.Attribute{name: "ALIAS", value: v}] ->
-            [aliases: v |> String.split(";") |> Enum.map(&String.trim/1)]
-
-          [] ->
-            [aliases: []]
+          [%DB.Object.Attribute{name: "ALIAS", value: v}] -> v
+          [] -> ""
         end
+        |> load_aliases(object.type, object.name)
     }
   end
 
@@ -61,5 +59,22 @@ defmodule ExMUSH.DB.Object do
       location_id: OID.to_db(object.location_oid),
       link_id: OID.to_db(object.link_oid)
     ]
+  end
+
+  defp load_aliases(attr_value, type, name) when type in [:player, :exit] do
+    attr_value
+    |> String.downcase()
+    |> String.split(";", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> MapSet.new()
+    |> MapSet.put(name)
+  end
+
+  defp load_aliases(_attr_value, type, name) when type in [:thing, :room] do
+    name
+    |> String.downcase()
+    |> String.split()
+    |> MapSet.new()
+    |> MapSet.put(name)
   end
 end
