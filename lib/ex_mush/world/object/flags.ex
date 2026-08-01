@@ -27,7 +27,9 @@ defmodule ExMUSH.World.Object.Flags do
     %Flag{key: :no_command, name: "NO_COMMAND", letter: ?n},
     %Flag{key: :myopic, name: "MYOPIC", letter: ?m},
     %Flag{key: :dark, name: "DARK", letter: ?D},
-    %Flag{key: :light, name: "LIGHT", letter: ?l}
+    %Flag{key: :light, name: "LIGHT", letter: ?l},
+    %Flag{key: :jump_ok, name: "JUMP_OK", letter: ?J},
+    %Flag{key: :link_ok, name: "LINK_OK", letter: ?L}
   ]
 
   def db_flag_keys do
