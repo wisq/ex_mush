@@ -39,7 +39,7 @@ defmodule ExMUSH.World.ObjectDirectory.Writer do
   def handle_info(:flush, %State{to_flush: to_flush}) do
     to_flush
     |> Enum.map(&Object.get/1)
-    |> Enum.map(&Object.to_db/1)
+    |> Enum.map(&DB.Object.from_world/1)
     |> then(fn records ->
       DB.Repo.insert_all(DB.Object, records,
         conflict_target: :id,

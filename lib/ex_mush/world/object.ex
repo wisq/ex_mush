@@ -4,100 +4,28 @@ defmodule ExMUSH.World.Object do
   alias __MODULE__
   alias __MODULE__.Flags
 
-  alias ExMUSH.DB
   alias ExMUSH.World.{ObjectDirectory, ObjectServer}
   alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.Network
 
-  @base_keys [:name, :type]
-  @time_keys [
-    ctime: :inserted_at,
-    mtime: :updated_at
-  ]
-  @oid_keys [
-    oid: :id,
-    owner_oid: :owner_id,
-    parent_oid: :parent_id,
-    location_oid: :location_id,
-    link_oid: :link_id
-  ]
-  @derived_keys [:aliases]
-
   @enforce_keys [
-                  @base_keys,
-                  [:flags],
-                  Keyword.keys(@time_keys),
-                  Keyword.keys(@oid_keys),
-                  @derived_keys
-                ]
-                |> Enum.reduce(&Kernel.++/2)
+    :name,
+    :type,
+    :flags,
+    :ctime,
+    :mtime,
+    :oid,
+    :owner_oid,
+    :parent_oid,
+    :location_oid,
+    :link_oid,
+    :aliases
+  ]
   defstruct(@enforce_keys)
 
   defguardp is_object_or_oid(oo) when is_object_id(oo) or is_struct(oo, Object)
   defp to_object_id(%Object{oid: oid}), do: oid
   defp to_object_id(oid) when is_object_id(oid), do: oid
-
-  def from_db(%DB.Object{} = obj) do
-    base =
-      Map.take(obj, @base_keys)
-      |> Enum.to_list()
-
-    flags = [flags: MapSet.new(obj.flags)]
-
-    times =
-      @time_keys
-      |> Enum.map(fn {my_key, db_key} ->
-        datetime = Map.fetch!(obj, db_key)
-        unix = datetime |> DateTime.to_unix()
-        {my_key, {unix, datetime}}
-      end)
-
-    oids =
-      @oid_keys
-      |> Enum.map(fn {my_key, db_key} ->
-        oid = Map.fetch!(obj, db_key) |> OID.from_db()
-        {my_key, oid}
-      end)
-
-    aliases =
-      case obj.attributes do
-        [%DB.Object.Attribute{name: "ALIAS", value: v}] ->
-          [aliases: v |> String.split(";") |> Enum.map(&String.trim/1)]
-
-        [] ->
-          [aliases: []]
-      end
-
-    struct!(Object, base ++ flags ++ times ++ oids ++ aliases)
-  end
-
-  def to_db(%Object{} = obj) do
-    base =
-      Map.take(obj, @base_keys)
-      |> Enum.to_list()
-
-    flags =
-      obj.flags
-      |> MapSet.intersection(Flags.db_flag_keys())
-      |> Enum.to_list()
-      |> then(&[flags: &1])
-
-    times =
-      @time_keys
-      |> Enum.map(fn {my_key, db_key} ->
-        {_unix, datetime} = Map.fetch!(obj, my_key)
-        {db_key, datetime}
-      end)
-
-    oids =
-      @oid_keys
-      |> Enum.map(fn {my_key, db_key} ->
-        oid = Map.fetch!(obj, my_key) |> OID.to_db()
-        {db_key, oid}
-      end)
-
-    base ++ flags ++ times ++ oids
-  end
 
   defdelegate fetch(oid), to: ObjectDirectory
   defdelegate exists?(oid), to: ObjectDirectory
