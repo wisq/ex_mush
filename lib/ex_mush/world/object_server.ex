@@ -1,9 +1,9 @@
 defmodule ExMUSH.World.ObjectServer do
   use GenServer
   import ExMUSH
-  alias ExMUSH.DB
+  alias ExMUSH.DB.Repo
+  alias ExMUSH.DB.Object.Attribute, as: DBAttribute
   alias ExMUSH.World.{ObjectDirectory, ObjectSupervisor, ObjectRegistry}
-  alias ExMUSH.World.Object.Attribute
 
   def child_spec(oid) do
     super(object_id: oid)
@@ -41,8 +41,8 @@ defmodule ExMUSH.World.ObjectServer do
 
   defp load_attributes(object_id) do
     attrs =
-      DB.Repo.all_by(DB.Object.Attribute, object_id: object_id)
-      |> Enum.map(&Attribute.from_db/1)
+      Repo.all_by(DBAttribute, object_id: object_id)
+      |> Enum.map(&DBAttribute.to_world/1)
       |> Enum.map(fn a -> {a.name, a} end)
 
     ets = :ets.new(:attributes, [:ordered_set, :protected])
