@@ -1,5 +1,5 @@
 defmodule ExMUSH.Context do
-  import ExMUSH
+  alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.World.Object
 
   @enforce_keys [:player, :this, :caller]
@@ -7,10 +7,10 @@ defmodule ExMUSH.Context do
 
   alias __MODULE__
 
-  def for_player(oid) when is_object_id(oid) do
-    player = Object.get(oid)
-    %Context{player: player, this: player, caller: player}
-  end
+  def for_player(%Object{} = player),
+    do: %Context{player: player, this: player, caller: player}
+
+  def for_player(%OID{} = oid), do: Object.get(oid) |> for_player()
 
   def update(
         %Context{player: old_player, this: old_this, caller: old_caller},
