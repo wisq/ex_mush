@@ -144,11 +144,17 @@ defmodule ExMUSH.World.Object do
   end
 
   def full_name(%Object{} = this, %Object{} = player) do
-    if :myopic not in player.flags and controls?(player, this) do
-      [this.name, "(", to_string(this.oid), Flags.letters(this), ")"]
-    else
-      this.name
+    cond do
+      :myopic in player.flags -> :short
+      :link_ok in this.flags -> :full
+      :jump_ok in this.flags -> :full
+      controls?(player, this) -> :full
+      true -> :short
     end
+    |> then(fn
+      :full -> [this.name, "(", to_string(this.oid), Flags.letters(this), ")"]
+      :short -> this.name
+    end)
   end
 
   def controls?(%Object{} = player, %Object{} = object) do
