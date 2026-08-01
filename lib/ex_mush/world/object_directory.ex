@@ -141,9 +141,9 @@ defmodule ExMUSH.World.ObjectDirectory do
   end
 
   defp do_move(%Object{} = object, %OID{} = to_oid) do
-    :ok = contents_remove(object.location_oid, object.oid)
+    contents_remove(object.location_oid, object.oid)
     {:ok, object} = do_update(object, location_oid: to_oid)
-    :ok = contents_add(to_oid, object.oid)
+    contents_add(to_oid, object.oid)
     {:ok, object}
   end
 
@@ -172,16 +172,10 @@ defmodule ExMUSH.World.ObjectDirectory do
 
   defp contents_add(loc_id, obj_id) do
     :ets.insert(@contents_ets, [{loc_id.id, obj_id.id}])
-    |> IO.inspect(label: "insert")
-
-    :ok
   end
 
   defp contents_remove(loc_id, obj_id) do
     :ets.delete_object(@contents_ets, {loc_id.id, obj_id.id})
-    |> IO.inspect(label: "delete_object")
-
-    :ok
   end
 
   defp load_objects do
