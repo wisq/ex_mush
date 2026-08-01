@@ -100,6 +100,7 @@ defmodule ExMUSH.World.Object do
   end
 
   defdelegate fetch(oid), to: ObjectDirectory
+  defdelegate exists?(oid), to: ObjectDirectory
 
   def get(%OID{} = oid) do
     case fetch(oid) do
