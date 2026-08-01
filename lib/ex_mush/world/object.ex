@@ -111,6 +111,15 @@ defmodule ExMUSH.World.Object do
   def get_or_nil(~o'#-1'), do: nil
   def get_or_nil(%OID{} = oid), do: get(oid)
 
+  # Stock PennMUSH has an exit's link as its source, and location as its destination.
+  # I've chosen to reverse that to make things more logical, but it does mean
+  # we need to reverse how this function works for exits.
+  def home(%Object{type: :exit, location_oid: oid}), do: get(oid)
+  # A room's home is its drop-to location, and is optional.
+  def home(%Object{type: :room, link_oid: oid}), do: get_or_nil(oid)
+  # Everything else MUST have a home.
+  def home(%Object{link_oid: oid}), do: get(oid)
+
   def contents(%Object{oid: oid}), do: contents(oid)
 
   def contents(%OID{} = oid) do
