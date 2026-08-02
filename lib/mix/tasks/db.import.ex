@@ -337,7 +337,7 @@ defmodule ExMUSH.Import.DataTree do
 
     before
     |> String.replace(~r{\\.}, fn
-      ~s{\\"} -> ~s{"}
+      <<?\\, c>> -> c
     end)
   end
 
