@@ -252,19 +252,16 @@ defmodule ExMUSH.Network.Telnet do
   end
 
   defp to_output_encoding(output, %State{unicode_out: true}), do: output
-
-  defp to_output_encoding(output, %State{unicode_out: false}),
-    do: to_ascii(output) |> :erlang.iolist_to_binary()
+  defp to_output_encoding(output, %State{unicode_out: false}), do: to_ascii(output)
 
   defp to_ascii(str) do
-    case :unicode.characters_to_binary(str, :utf8, :latin1) do
-      ascii when is_binary(ascii) ->
-        ascii
-
-      {:error, ascii, rest} ->
-        {_drop, rest} = String.next_grapheme(rest)
-        [ascii, "?", to_ascii(rest)]
-    end
+    str
+    |> String.to_charlist()
+    |> Enum.map(fn
+      c when c <= 127 -> c
+      _ -> ??
+    end)
+    |> :erlang.iolist_to_binary()
   end
 
   defp get_peer_name(socket) do
