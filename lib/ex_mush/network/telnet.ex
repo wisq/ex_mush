@@ -25,7 +25,6 @@ defmodule ExMUSH.Network.Telnet do
   @iac_on_connect [
                     [:iac, :do, :naws],
                     [:iac, :do, :terminal_type],
-                    [:iac, :wont, :echo],
                     [:iac, :do, :charset]
                   ]
                   |> Enum.map(&IAC.negotiate/1)

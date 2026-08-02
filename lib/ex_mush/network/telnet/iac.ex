@@ -63,10 +63,12 @@ defmodule ExMUSH.Network.Telnet.IAC do
   end
 
   def request_terminal_type do
+    # IAC SB TERMINAL_TYPE SEND SE
     <<@iac, @subopt_begin, @terminal_type, 1, @iac, @subopt_end>>
   end
 
   def offer_utf8_charset do
+    # IAC SB CHARSET REQUEST [separator] "UTF-8" SE
     <<@iac, @subopt_begin, @charset, 1, 1, "UTF-8", @iac, @subopt_end>>
   end
 
