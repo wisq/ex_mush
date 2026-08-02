@@ -44,23 +44,25 @@ defmodule ExMUSH.World.Matching do
     end
   end
 
-  def locate(origin, text, opts \\ %Opts{})
+  def locate(origin, text, opts \\ %Opts{}) do
+    do_locate(origin, String.downcase(text), opts)
+  end
 
-  def locate(%Object{} = origin, "me", %Opts{me: true}), do: {:ok, origin}
+  defp do_locate(%Object{} = origin, "me", %Opts{me: true}), do: {:ok, origin}
 
-  def locate(%Object{} = origin, "here", %Opts{here: true}) do
+  defp do_locate(%Object{} = origin, "here", %Opts{here: true}) do
     origin.location_oid
     |> Object.get_or_nil()
     |> handle_get()
   end
 
-  def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: false}),
+  defp do_locate(_, "*" <> pname, %Opts{star_players: true, exact_match: false}),
     do: ObjectDirectory.match_player_oid(pname, :partial) |> handle_match()
 
-  def locate(_, "*" <> pname, %Opts{star_players: true, exact_match: true}),
+  defp do_locate(_, "*" <> pname, %Opts{star_players: true, exact_match: true}),
     do: ObjectDirectory.match_player_oid(pname, :exact) |> handle_match()
 
-  def locate(_, "#" <> _ = idstr, %Opts{oid: true}) do
+  defp do_locate(_, "#" <> _ = idstr, %Opts{oid: true}) do
     with {:ok, oid} <- OID.parse(idstr),
          {:ok, %Object{} = obj} <- Object.fetch(oid) do
       {:ok, obj}
@@ -69,14 +71,14 @@ defmodule ExMUSH.World.Matching do
     end
   end
 
-  def locate(origin, text, %Opts{always_players: true} = opts) do
+  defp do_locate(origin, text, %Opts{always_players: true} = opts) do
     case ObjectDirectory.match_player_oid(text, :exact) do
       {:ok, %OID{} = oid} -> {:ok, Object.get(oid)}
       {:error, :no_match} -> locate(origin, text, %Opts{opts | always_players: false})
     end
   end
 
-  def locate(%Object{} = origin, text, %Opts{} = opts) do
+  defp do_locate(%Object{} = origin, text, %Opts{} = opts) do
     {inventory, exits} = maybe_get_contents(origin, opts)
     {nearby_objects, nearby_exits} = maybe_get_nearby(origin.location_oid, opts)
 

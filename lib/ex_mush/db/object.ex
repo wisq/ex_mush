@@ -52,8 +52,8 @@ defmodule ExMUSH.DB.Object do
         object.flags
         |> MapSet.intersection(Flags.db_flag_keys())
         |> Enum.to_list(),
-      ctime: DB.wtime_to_dbtime(object.ctime),
-      mtime: DB.wtime_to_dbtime(object.mtime),
+      inserted_at: DB.wtime_to_dbtime(object.ctime),
+      updated_at: DB.wtime_to_dbtime(object.mtime),
       owner_id: OID.to_db(object.owner_oid),
       parent_id: OID.to_db(object.parent_oid),
       location_id: OID.to_db(object.location_oid),
@@ -67,7 +67,7 @@ defmodule ExMUSH.DB.Object do
     |> String.split(";", trim: true)
     |> Enum.map(&String.trim/1)
     |> MapSet.new()
-    |> MapSet.put(name)
+    |> MapSet.put(String.downcase(name))
   end
 
   defp load_aliases(_attr_value, type, name) when type in [:thing, :room] do
@@ -75,6 +75,6 @@ defmodule ExMUSH.DB.Object do
     |> String.downcase()
     |> String.split()
     |> MapSet.new()
-    |> MapSet.put(name)
+    |> MapSet.put(String.downcase(name))
   end
 end
