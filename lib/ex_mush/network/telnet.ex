@@ -216,6 +216,8 @@ defmodule ExMUSH.Network.Telnet do
   end
 
   defp dispatch_line(line, socket, state) do
+    if state.unicode_out, do: Socket.send(socket, "\r")
+
     if check_printable?(line, state) do
       Session.input(state.session, line)
     else
@@ -225,13 +227,19 @@ defmodule ExMUSH.Network.Telnet do
 
   @impl GenServer
   def handle_info({:output, iodata}, {socket, state}) do
-    ["\r", iodata, "\n"]
+    [iodata, "\n"]
     |> IO.iodata_to_binary()
     |> String.replace("\n", "\r\n")
     |> to_output_encoding(state)
     |> then(&Socket.send(socket, &1))
 
     {:noreply, {socket, state}, socket.read_timeout}
+  end
+
+  @impl GenServer
+  def handle_info({:EXIT, session, :normal}, {_socket, %State{session: session} = state}) do
+    Logger.info("Closing connection on #{state.fd} from #{state.peer}.")
+    {:stop, :normal, state}
   end
 
   defp to_output_encoding(output, %State{unicode_out: true}), do: output

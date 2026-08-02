@@ -41,7 +41,7 @@ defmodule ExMUSH.Network.Session do
   def handle_cast({:input, line}, %State{player_oid: nil} = state) do
     with {:ok, cmd} <- Command.Login.parse(line) do
       case Command.Login.execute(cmd, &do_output(&1, state)) do
-        :close -> {:stop, :normal}
+        :close -> {:stop, :normal, state}
         {:connected, oid} -> {:noreply, do_connect(oid, state)}
         :ok -> {:noreply, state}
       end
