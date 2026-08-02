@@ -268,11 +268,7 @@ defmodule ExMUSH.Network.Telnet do
 
   defp to_ascii(str) do
     str
-    |> String.to_charlist()
-    |> Enum.map(fn
-      c when c <= 127 -> c
-      _ -> ??
-    end)
+    |> AnyAscii.transliterate()
     |> :erlang.iolist_to_binary()
   end
 

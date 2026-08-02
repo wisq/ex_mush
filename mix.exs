@@ -36,7 +36,8 @@ defmodule ExMUSH.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:thousand_island, "~> 1.0"},
       {:nimble_parsec, "~> 1.0"},
-      {:ex_git_test, "~> 0.1", only: [:dev, :test], runtime: false}
+      {:ex_git_test, "~> 0.1", only: [:dev, :test], runtime: false},
+      {:any_ascii, "~> 0.3"}
     ]
   end
 end

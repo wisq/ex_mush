@@ -1,4 +1,5 @@
 %{
+  "any_ascii": {:hex, :any_ascii, "0.3.3", "f2eadac97e5dc8e640b8c0fd8571719cf4a7abefec188d369d9ece8d3d3c88f9", [:mix], [], "hexpm", "3253b351f823fb0d0b956c75411fe474018d472994ea705513eb1575d17410ea"},
   "briefly": {:hex, :briefly, "0.4.1", "c90c0511e64bde1fe8da7e244e14acf5bc78c3f6d033db778205e1fa2feafa5c", [:mix], [], "hexpm", "fc0cafcd19c4ed0d0906ae5cf627cc6ce76b8652a160c6bde0ab9d77304ebb0a"},
   "db_connection": {:hex, :db_connection, "2.10.2", "ae391e803a5adff104da913c2fc1c0c14a37f8b10001dcef568796e1fb7bf95c", [:mix], [{:telemetry, "~> 0.4 or ~> 1.0", [hex: :telemetry, repo: "hexpm", optional: false]}], "hexpm", "510b14482330f1af6490a2fa0efd8d4f1435d1529b165647df22ac0f2df0fa93"},
   "decimal": {:hex, :decimal, "3.1.1", "430d87b04011ce6cbd4fd205be758311a81f87d552d40904abd00f015935b1d0", [:mix], [], "hexpm", "c5f25f2ced74a0587d03e6023f595db8e924c9d3922c8c8ffd9edfc4498cf1f6"},
