@@ -72,6 +72,10 @@ defmodule ExMUSH.Network.Telnet do
       end)
     end
 
+    def request_terminal_type do
+      <<@iac, @subopt_begin, @terminal_type, 1, @iac, @subopt_end>>
+    end
+
     def parse(<<@iac, @iac, rest::binary>>), do: {:data, <<@iac>>, rest}
 
     @command_bytes Keyword.values(@commands)
@@ -99,9 +103,14 @@ defmodule ExMUSH.Network.Telnet do
       end
     end
 
-    def request_terminal_type do
-      <<@iac, @subopt_begin, @terminal_type, 1, @iac, @subopt_end>>
-    end
+    # We can't just assume any unknown command is incomplete, since then we'd
+    # be buffering IAC commands forever.
+    #
+    # Instead, we only match known incomplete commands:
+    #  - IAC with nothing after it
+    def parse(<<@iac>>), do: :partial_command
+    #  - IAC negotiation with no capability
+    def parse(<<@iac, n_byte>>) when n_byte in @negotiation_bytes, do: :partial_command
 
     defp parse_subopt(<<@naws, width::integer-size(16), height::integer-size(16)>>) do
       [:naws, {width, height}]
