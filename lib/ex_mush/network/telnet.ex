@@ -28,7 +28,7 @@ defmodule ExMUSH.Network.Telnet do
                     [:iac, :wont, :echo],
                     [:iac, :do, :charset]
                   ]
-                  |> Enum.map(&IAC.to_bytes/1)
+                  |> Enum.map(&IAC.negotiate/1)
 
   @impl ThousandIsland.Handler
   def handle_connection(socket, _state) do
@@ -213,21 +213,24 @@ defmodule ExMUSH.Network.Telnet do
       [:iac, :do, :transmit_binary],
       [:iac, :will, :transmit_binary]
     ]
-    |> Enum.map(&IAC.to_bytes/1)
+    |> Enum.map(&IAC.negotiate/1)
     |> then(&Socket.send(socket, &1))
 
     state
   end
 
-  defp handle_iac([:iac, :will, other] = iac, socket, %State{} = state) do
+  defp handle_iac([:iac, :will, capab] = iac, socket, %State{} = state) do
     Logger.warning("Refusing #{state.fd} unknown client capability: #{inspect(iac)}")
-    Socket.send(socket, [:iac, :dont, other] |> IAC.to_bytes())
+    Socket.send(socket, [:iac, :dont, capab] |> IAC.negotiate())
     state
   end
 
-  defp handle_iac([:iac, :do, other] = iac, socket, %State{} = state) do
-    Logger.warning("Refusing #{state.fd} unknown server capability: #{inspect(iac)}")
-    Socket.send(socket, [:iac, :wont, other] |> IAC.to_bytes())
+  defp handle_iac([:iac, :do, capab] = iac, socket, %State{} = state) do
+    unless capab == :timing_mark do
+      Logger.warning("Refusing #{state.fd} unknown server capability: #{inspect(iac)}")
+    end
+
+    Socket.send(socket, [:iac, :wont, capab] |> IAC.negotiate())
     state
   end
 
@@ -246,8 +249,13 @@ defmodule ExMUSH.Network.Telnet do
     %State{state | unicode_in: true, unicode_out: true}
   end
 
-  defp handle_iac(unknown, _socket, state) do
-    IO.inspect(unknown, label: "IAC")
+  # Common keys: ctrl-\, ctrl-C, ctrl-Z
+  defp handle_iac([:iac, :break], _, state), do: state
+  defp handle_iac([:iac, :interrupt], _, state), do: state
+  defp handle_iac([:iac, :suspend], _, state), do: state
+
+  defp handle_iac(iac, _socket, state) do
+    Logger.debug("Client #{state.fd} sent unknown IAC command: #{inspect(iac)}")
     state
   end
 end
