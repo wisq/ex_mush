@@ -27,6 +27,7 @@ defmodule ExMUSH.Network.Telnet do
 
     @naws 31
     @terminal_type 24
+    @charset 42
 
     @negotiation [
       will: 251,
@@ -39,7 +40,7 @@ defmodule ExMUSH.Network.Telnet do
       naws: @naws,
       terminal_type: @terminal_type,
       transmit_binary: 0,
-      charset: 42,
+      charset: @charset,
       echo: 1,
       suppress_go_ahead: 3
     ]
@@ -74,6 +75,10 @@ defmodule ExMUSH.Network.Telnet do
 
     def request_terminal_type do
       <<@iac, @subopt_begin, @terminal_type, 1, @iac, @subopt_end>>
+    end
+
+    def offer_utf8_charset do
+      <<@iac, @subopt_begin, @charset, 1, 1, "UTF-8", @iac, @subopt_end>>
     end
 
     def parse(<<@iac, @iac, rest::binary>>), do: {:data, <<@iac>>, rest}
@@ -120,6 +125,14 @@ defmodule ExMUSH.Network.Telnet do
       [:terminal_type, type]
     end
 
+    defp parse_subopt(<<@charset, 2, encoding::binary>>) do
+      [:charset, {:accepted, encoding}]
+    end
+
+    defp parse_subopt(<<@charset, 3, encoding::binary>>) do
+      [:charset, {:rejected, encoding}]
+    end
+
     defp read_subopt(bytes, buffer \\ []) do
       case :binary.match(bytes, <<@iac>>) do
         :nomatch ->
@@ -148,8 +161,7 @@ defmodule ExMUSH.Network.Telnet do
                     [:iac, :do, :naws],
                     [:iac, :do, :terminal_type],
                     [:iac, :wont, :echo],
-                    [:iac, :do, :transmit_binary],
-                    [:iac, :will, :transmit_binary]
+                    [:iac, :do, :charset]
                   ]
                   |> Enum.map(&IAC.to_bytes/1)
 
@@ -308,11 +320,42 @@ defmodule ExMUSH.Network.Telnet do
   end
 
   defp handle_iac([:iac, :will, :transmit_binary], _socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} agrees to send binary data")
     %State{state | unicode_in: true}
   end
 
+  defp handle_iac([:iac, :wont, :transmit_binary], _socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} refuses to send binary data")
+    state
+  end
+
   defp handle_iac([:iac, :do, :transmit_binary], _socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} agrees to receive binary data")
     %State{state | unicode_out: true}
+  end
+
+  defp handle_iac([:iac, :dont, :transmit_binary], _socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} refuses to receive binary data")
+    state
+  end
+
+  defp handle_iac([:iac, :will, :charset], socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} begins charset negotiation")
+    Socket.send(socket, IAC.offer_utf8_charset())
+    state
+  end
+
+  defp handle_iac([:iac, :wont, :charset], socket, %State{} = state) do
+    Logger.debug("Client #{state.fd} refuses charset negotiation, trying binary")
+
+    [
+      [:iac, :do, :transmit_binary],
+      [:iac, :will, :transmit_binary]
+    ]
+    |> Enum.map(&IAC.to_bytes/1)
+    |> then(&Socket.send(socket, &1))
+
+    state
   end
 
   defp handle_iac([:iac, :will, other] = iac, socket, %State{} = state) do
@@ -335,6 +378,11 @@ defmodule ExMUSH.Network.Telnet do
   defp handle_iac([:iac, :subopt, :terminal_type, type], _socket, %State{} = state) do
     Logger.debug("Client #{state.fd} terminal type: #{inspect(type)}")
     state
+  end
+
+  defp handle_iac([:iac, :subopt, :charset, {:accepted, "UTF-8"}], _, %State{} = state) do
+    Logger.debug("Client #{state.fd} accepts UTF-8 encoding")
+    %State{state | unicode_in: true, unicode_out: true}
   end
 
   defp handle_iac(unknown, _socket, state) do
