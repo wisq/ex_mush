@@ -5,10 +5,10 @@ Just a quick sketch of how ExMUSH handles telnet option negotiation.
 ### Legend
 
 ```mermaid
-flowchart TD
-    server[[ Message from server ]]
-    server --> client([ Message from client ])
-    client --> config{{ Configuration change }}
+flowchart LR
+    key{ User <br/> keypress } --> client([ Message from client ])
+    server[[ Message from server ]] --> action{{ Server-side action }}
+    linkStyle default display:none;
 ```
 
 ## Unicode Output
