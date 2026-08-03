@@ -7,11 +7,17 @@ defmodule ExMUSH.Command.Parser do
   command_name = ascii_string([?@, ?A..?Z, ?a..?z], min: 1, max: 20)
   switch = string("/") |> ignore() |> ascii_string([?A..?Z, ?a..?z], min: 1, max: 10)
 
+  command_prefix =
+    [?", ?:, ?;, ?\\]
+    |> Enum.map(fn c -> string(<<c>>) end)
+    |> choice()
+
   defparsecp(
     :parse_command,
-    command_name
-    |> repeat(switch)
-    |> choice([space, eos()])
+    choice([
+      command_name |> repeat(switch) |> choice([space, eos()]),
+      command_prefix
+    ])
   )
 
   def parse(line) do

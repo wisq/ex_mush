@@ -72,6 +72,23 @@ defmodule ExMUSH.World.Object do
     end
   end
 
+  def announce(%OID{} = oid, iodata), do: get(oid) |> announce(iodata)
+
+  def announce(%Object{oid: this_oid, location_oid: loc_oid}, iodata) do
+    get(loc_oid)
+    |> contents()
+    |> Enum.reject(&(&1.oid == this_oid))
+    |> Enum.map(&tell(&1, iodata))
+  end
+
+  def announce_all(%OID{} = oid, iodata), do: get(oid) |> announce(iodata)
+
+  def announce_all(%Object{location_oid: loc_oid}, iodata) do
+    get(loc_oid)
+    |> contents()
+    |> Enum.map(&tell(&1, iodata))
+  end
+
   def full_name(%Object{} = this, %Object{} = player) do
     cond do
       :myopic in player.flags -> :short
