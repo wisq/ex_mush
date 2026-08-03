@@ -54,7 +54,6 @@ A basic outline of important modules, subtrees, and design notes:
 - `ExMUSH.Network.*`: Handles incoming connections and connects them to players.
   - `Network.Telnet`: The raw telnet connection.
     - Uses [ThousandIsland](https://github.com/mtrudel/thousand_island) to manage low-level socket concerns.
-    - Currently very simple, but will eventually start doing telnet option negotiation.
   - `Network.Session`: A single user session.
     - Handles processing incoming user commands and delivering outgoing messages.
     - Launched by `Network.SessionSupervisor`, and indexed by `Network.SessionRegistry`.
@@ -94,5 +93,3 @@ There's still absolutely **tons** of stuff to do, but some standouts include:
   - basic 16-colour ANSI
   - full XTerm colour support, both 256-colour and full 24-bit RGB
   - all without actually embedding escape sequences in text until it hits the wire
-- telnet options like UTF-8 (and downgrading to ASCII if needed)
-  - we currently just use UTF-8 by default and accept all user input if it's considered printable, which might be unsafe 😅
