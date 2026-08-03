@@ -28,4 +28,11 @@ defmodule ExMUSH.Commands.Social do
   defcommand pose(%Context{player: player}, %{nospace: true}, message) do
     Object.announce_all(player, ~s'#{player.name}#{message}')
   end
+
+  @command ";"
+  @parser :one_arg
+
+  defcommand pose_nospace(%Context{} = ctx, _switches, message \\ "") do
+    pose(ctx, %{nospace: true}, message)
+  end
 end
