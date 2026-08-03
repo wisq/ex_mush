@@ -253,6 +253,9 @@ defmodule ExMUSH.Network.Telnet do
   defp handle_iac([:iac, :interrupt], _, state), do: state
   defp handle_iac([:iac, :suspend], _, state), do: state
 
+  # Explicitly ignore noop.
+  defp handle_iac([:iac, :noop], _, state), do: state
+
   defp handle_iac(iac, _socket, state) do
     Logger.debug("Client #{state.fd} sent unknown IAC command: #{inspect(iac)}")
     state

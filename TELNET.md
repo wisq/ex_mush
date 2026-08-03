@@ -96,3 +96,31 @@ flowchart TD
     do_naws --> wont_naws([ IAC WONT NAWS ])
     wont_naws --> fail{{ Ignored. }}
 ```
+
+## Other
+
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 10000 }} }%%
+
+flowchart LR
+    invis1 ---> iac([ IAC IAC ]) ---> literal{{ Treated as IAC character <br/> in data stream }}
+    invis1 ---> noop([ IAC NO-OP ]) ---> ignore{{ Ignored }}
+
+    style invis1 display:none, font-size: 0px;
+    linkStyle 0 display:none;
+    linkStyle 2 display:none;
+
+    ctrl_c{ctrl-C} ---> interrupt([ IAC INTERRUPT-PROCESS <br/> IAC DO TIMING-MARK ]) ---> wont_timing
+    ctrl_bk{ctrl-\} ---> break([IAC BREAK <br/> IAC DO TIMING-MARK ]) ---> wont_timing
+    ctrl_z{ctrl-Z} ---> suspend([ IAC SUSPEND <br/> IAC DO TIMING-MARK ]) ---> wont_timing
+    wont_timing[[ #40;command ignored#41; <br/> IAC WONT TIMING-MARK <br/> #40;not logged#41; ]]
+
+    ctrl_t{ctrl-T} ---> ping([ IAC ARE-YOU-THERE ]) ---> pong[[ *** Server is up *** ]]
+
+    invis2 ---> do([ IAC DO x ]) ---> wont[[ IAC WONT x <br/> #40;logged#41; ]]
+    invis2 ---> will([ IAC WILL x ]) ---> dont[[ IAC DONT x <br/> #40;logged#41;]]
+    style invis2 display:none, font-size: 0px;
+    linkStyle 12 display:none;
+    linkStyle 14 display:none;
+```
