@@ -35,22 +35,17 @@ defmodule ExMUSH.Command.Login do
   connect_or_create = command_1_7 |> ignore(space) |> concat(username) |> ignore(space)
 
   who = string("WHO") |> eos()
-  quit = string("QUIT") |> eos()
 
   defparsecp(
     :login_command,
     choice([
       who,
-      quit,
       connect_or_create
     ])
   )
 
   def parse(str) do
     case str |> String.trim() |> login_command() do
-      {:ok, ["QUIT"], "", _, _, _} ->
-        {:ok, :quit}
-
       {:ok, ["WHO"], "", _, _, _} ->
         {:ok, :who}
 
@@ -69,7 +64,6 @@ defmodule ExMUSH.Command.Login do
     end
   end
 
-  def execute(:quit, _), do: :close
   def execute(:who, out), do: out.("WHO: Not implemented yet.")
 
   def execute({:create, _, _}, out), do: out.("CREATE: Not implemented yet.")

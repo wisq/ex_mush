@@ -1,6 +1,6 @@
 defmodule ExMUSH.Network.Session do
   use GenServer
-  import ExMUSH
+  alias ExMUSH.ObjectID, as: OID
   alias ExMUSH.Command
   alias ExMUSH.Context
   alias ExMUSH.Action
@@ -33,27 +33,36 @@ defmodule ExMUSH.Network.Session do
   def init({net_pid, conn_info}) do
     Process.link(net_pid)
     state = %State{net_pid: net_pid, conn_info: conn_info}
-    do_output(Command.Login.motd(), state)
-    {:ok, state}
+    {:ok, show_motd(state)}
+  end
+
+  @impl true
+  def handle_cast({:input, "QUIT"}, state) do
+    {:stop, :normal, state}
+  end
+
+  @impl true
+  def handle_cast({:input, "LOGOUT"}, %State{player_oid: %OID{}} = state) do
+    state
+    |> do_logout()
+    |> show_motd()
+    |> then(&{:noreply, &1})
   end
 
   @impl true
   def handle_cast({:input, line}, %State{player_oid: nil} = state) do
     with {:ok, cmd} <- Command.Login.parse(line) do
       case Command.Login.execute(cmd, &do_output(&1, state)) do
-        :close -> {:stop, :normal, state}
         {:connected, oid} -> {:noreply, do_connect(oid, state)}
         :ok -> {:noreply, state}
       end
     else
-      _ ->
-        do_output(Command.Login.motd(), state)
-        {:noreply, state}
+      _ -> {:noreply, show_motd(state)}
     end
   end
 
   @impl true
-  def handle_cast({:input, line}, %State{player_oid: oid} = state) when is_object_id(oid) do
+  def handle_cast({:input, line}, %State{player_oid: %OID{} = oid} = state) do
     line = String.trim(line)
 
     if line != "" do
@@ -71,9 +80,19 @@ defmodule ExMUSH.Network.Session do
     {:noreply, state}
   end
 
+  defp show_motd(%State{} = state) do
+    do_output(Command.Login.motd(), state)
+    state
+  end
+
   defp do_output(iodata, %State{net_pid: pid}) do
     send(pid, {:output, iodata})
     :ok
+  end
+
+  defp do_logout(%State{player_oid: %OID{} = oid} = state) do
+    SessionRegistry.unregister(oid)
+    %State{state | player_oid: nil}
   end
 
   defp do_connect(new_oid, %State{player_oid: nil, conn_info: info} = state) do

@@ -1,16 +1,20 @@
 defmodule ExMUSH.Network.SessionRegistry do
-  import ExMUSH
   alias ExMUSH.Network.Session
+  alias ExMUSH.ObjectID, as: OID
 
   def child_spec(opts) do
     Registry.child_spec(opts ++ [name: __MODULE__, keys: :duplicate])
   end
 
-  def register(player_oid, %{} = conn_info) when is_object_id(player_oid) do
+  def register(%OID{} = player_oid, %{} = conn_info) do
     Registry.register(__MODULE__, player_oid, conn_info)
   end
 
-  def connected?(player_oid) do
+  def unregister(%OID{} = player_oid) do
+    Registry.unregister(__MODULE__, player_oid)
+  end
+
+  def connected?(%OID{} = player_oid) do
     case Registry.lookup(__MODULE__, player_oid) do
       [] -> false
       [_ | _] -> true
@@ -29,7 +33,7 @@ defmodule ExMUSH.Network.SessionRegistry do
     end)
   end
 
-  def notify(player_oid, iodata) when is_object_id(player_oid) do
+  def notify(%OID{} = player_oid, iodata) do
     Registry.dispatch(__MODULE__, player_oid, fn matches ->
       matches
       |> Enum.each(fn {pid, _value} ->
